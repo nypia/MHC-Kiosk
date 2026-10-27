@@ -9,6 +9,7 @@ Standard library only, so it runs with any Python 3.9+ (or Blender's own Python)
 import argparse
 import json
 import pathlib
+import sys
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent / "assets"
@@ -22,7 +23,7 @@ TEXTURES = {
     "oak": "oak_veneer_01",        # counters, bar shelves
     "floor": "laminate_floor_02",  # interior floor
     "concrete": "concrete_floor_02",
-    "paving": "patterned_paving",
+    "paving": "concrete_pavement",
 }
 MAPS = {"diff": "Diffuse", "rough": "Rough", "nor": "nor_gl"}
 
@@ -60,7 +61,8 @@ def download(url, dest):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--final", action="store_true", help="4k textures + 8k HDRI")
-    args = ap.parse_args()
+    argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]  # blender -P ... -- args
+    args = ap.parse_args(argv)
     tex_res, hdri_res = ("4k", "8k") if args.final else ("2k", "4k")
 
     print("HDRI")

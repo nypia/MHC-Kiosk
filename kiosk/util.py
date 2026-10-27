@@ -205,8 +205,10 @@ def slab(name, d, z0, z1, mats, coll, step=0.03):
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     uv = bm.loops.layers.uv.new("UVMap")
     for f in bm.faces:
+        side = abs(f.normal.z) < 0.5
         for loop in f.loops:
-            loop[uv].uv = (loop.vert.co.x, loop.vert.co.y)
+            co = loop.vert.co
+            loop[uv].uv = (co.x + co.y, co.z) if side else (co.x, co.y)
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()

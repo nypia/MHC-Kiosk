@@ -1,4 +1,6 @@
 """PBR materials for Cycles. Colours come from config.PALETTE (design tokens)."""
+import math
+
 import bpy
 
 from . import config as C
@@ -56,11 +58,13 @@ def principled(name, color, rough=0.5, metal=0.0, coat=0.0, spec=0.5, emission=N
 
 
 def textured(name, tex, size_m, hue=0.5, sat=1.0, val=1.0, rough_mult=1.0, rough_add=0.0,
-             normal=0.6, random_offset=True, rotate=0.0, tint=None, tint_mix=0.0, coat=0.0):
+             normal=0.6, random_offset=True, rotate=0.0, tint=None, tint_mix=0.0, coat=0.0, macro=0.0):
     """Image-based PBR (diffuse/rough/normal) on the mesh UVs, which are in metres.
 
     size_m: real-world size one texture tile covers. random_offset shifts the
     texture per object so repeated pieces (slats, panels) don't look cloned.
+    macro: strength of a large-scale (~15 m) brightness variation that hides
+    tiling on big surfaces.
     """
     if name in _cache:
         return _cache[name]
@@ -108,6 +112,25 @@ def textured(name, tex, size_m, hue=0.5, sat=1.0, val=1.0, rough_mult=1.0, rough
         links.new(col, mix.inputs[6])
         mix.inputs[7].default_value = tok(tint)
         col = mix.outputs[2]
+    if macro:
+        noise = nodes.new("ShaderNodeTexNoise")
+        noise.inputs["Scale"].default_value = 0.07
+        noise.inputs["Detail"].default_value = 3
+        links.new(uv.outputs["UV"], noise.inputs["Vector"])
+        rng = nodes.new("ShaderNodeMapRange")
+        rng.inputs["To Min"].default_value = 1 - macro
+        rng.inputs["To Max"].default_value = 1 + macro * 0.4
+        links.new(noise.outputs["Fac"], rng.inputs["Value"])
+        mul = nodes.new("ShaderNodeMix")
+        mul.data_type = "RGBA"
+        mul.blend_type = "MULTIPLY"
+        mul.inputs["Factor"].default_value = 1.0
+        links.new(col, mul.inputs[6])
+        comb = nodes.new("ShaderNodeCombineColor")
+        for k in range(3):
+            links.new(rng.outputs["Result"], comb.inputs[k])
+        links.new(comb.outputs[0], mul.inputs[7])
+        col = mul.outputs[2]
     links.new(col, b.inputs["Base Color"])
 
     rm = nodes.new("ShaderNodeMath")
@@ -200,16 +223,17 @@ def key_emission(mat, frame, value, interp="BEZIER"):
 def library():
     """Every shared material, created once. Access as M['walnut'] etc."""
     return {
-        "walnut": textured("walnut slat", "wood", 1.2, hue=0.53, sat=0.80, val=1.25,
-                           rough_mult=0.7, rough_add=0.18, normal=0.5),
-        "oak": textured("oak", "oak", 1.0, hue=0.5, sat=0.9, val=1.0, rough_mult=0.8,
-                        rough_add=0.1, normal=0.3, coat=0.15),
-        "floor": textured("floor laminate", "floor", 1.6, hue=0.5, sat=0.6, val=0.85,
+        # hue/sat/val calibrated so the mean albedo lands on the palette token
+        "walnut": textured("walnut slat", "wood", 1.5, hue=0.515, sat=0.92, val=4.0,
+                           rough_mult=0.6, rough_add=0.22, normal=0.5, rotate=math.pi / 2),
+        "oak": textured("oak", "oak", 1.83, hue=0.49, sat=1.05, val=1.45, rough_mult=0.8,
+                        rough_add=0.1, normal=0.3, coat=0.15, rotate=math.pi / 2),
+        "floor": textured("floor laminate", "floor", 1.7, hue=0.5, sat=0.6, val=0.75,
                           normal=0.3, random_offset=False),
-        "concrete": textured("concrete", "concrete", 2.5, sat=0.4, val=1.15, normal=0.4,
+        "concrete": textured("concrete", "concrete", 2.0, sat=0.4, val=1.15, normal=0.4,
                              random_offset=False),
-        "paving": textured("paving", "paving", 2.0, sat=0.5, val=1.05, normal=0.6,
-                           random_offset=False),
+        "paving": textured("paving", "paving", 1.8, sat=0.7, val=1.0, normal=0.5,
+                           random_offset=False, macro=0.18),
         "anthracite": noisy("panel anthracite", "panel-anthracite", rough=0.42, metal=0.2,
                             rough_var=0.08, bump=0.02),
         "panel-white": noisy("panel white", "panel-white", rough=0.38, rough_var=0.05, bump=0.01),
