@@ -282,48 +282,112 @@ def pendant(M, coll, name, loc, drop):
 
 
 # ----------------------------------------------------------------- build
-def build(M, roof):
-    coll = U.collection("07 İç mekân")
-    ecoll = U.collection("08 Ekipman")
-    i0, i1 = C.phase("interior")
-    e0, e1 = C.phase("equipment")
-    roof_in = C.phase("panels")[1] - 16
+CEIL = Z(C.CEILING_Z)
 
-    floor = U.slab("zemin laminat", 0.11, Z(C.FLOOR_H - 0.012), Z(C.FLOOR_H), [M["floor"]], coll)
-    U.arrive(floor, i0, i0 + 12, offset=(0, 0, 1.5), interp="EXPO")
 
-    # Ceiling, lights and pendants hang from the roof module.
-    ceiling = U.slab("tavan", 0.17, Z(2.735), Z(2.74), [M["panel-white"]], coll)
-    U.parent(ceiling, roof)
+def service_deck(M, coll):
+    """Suspended service deck (teknik asma kat) at +2.50 with the ducted AC above it.
+
+    Build-up from below: 6 mm white board, 40x40 steel grid on the joist
+    lines, 18 mm plywood. It hangs from the ring beam with M10 rods. On top:
+    slim ducted indoor unit, supply duct to a linear slot over the window,
+    return grille, condensate and refrigerant lines, electrical panel.
+    Everything is parented to one root so it installs as a unit.
+    """
+    root = _group("teknik asma kat", coll)
+    board_top = CEIL + 0.006
+    grid_top = board_top + 0.040
+    deck_top = CEIL + C.DECK_T
+    plywood = Mt.principled("plywood", (0.62, 0.48, 0.30, 1), rough=0.8)
+    galv = M["steel-frame"]
+    copper = Mt.principled("copper", (0.78, 0.42, 0.25, 1), rough=0.3, metal=1.0)
+    white = [M["panel-white"]]
+    _add(root,
+         U.slab("asma tavan beyaz panel", 0.17, CEIL, board_top, white, coll),
+         U.slab("asma kat kontrplak", 0.17, grid_top, deck_top, [plywood], coll))
+    for k, x in enumerate((-2.0, -1.0, 0.0, 1.0, 2.0)):
+        _add(root, U.box(f"asma kat taşıyıcı {k}", (0.04, 2 * (C.B - 0.17), 0.04), (x, 0, board_top + 0.02), coll,
+                         [galv]))
+        for y in (-0.7, 0.7):
+            rod = Z(C.RING_Z[0]) - deck_top
+            _add(root, U.cylinder(f"asma kat askı {k} {y:+.1f}", 0.005, rod, (x, y, deck_top), coll, [galv], verts=8))
+
+    # Underside: access hatch, supply slot over the window, return grille.
+    black = [M["black-plastic"]]
+    hx, hy = -1.55, 0.05
+    for k, (dx, dy, w, d) in enumerate(((0, 0.3, 0.62, 0.01), (0, -0.3, 0.62, 0.01), (0.3, 0, 0.01, 0.62),
+                                        (-0.3, 0, 0.01, 0.62))):
+        _add(root, U.box(f"bakım kapağı çerçeve {k}", (w, d, 0.004), (hx + dx, hy + dy, CEIL - 0.002), coll, black))
+    _add(root,
+         U.box("üfleme menfezi", (1.40, 0.07, 0.006), (0.40, -1.15, CEIL - 0.003), coll, black),
+         U.box("emiş menfezi", (0.60, 0.30, 0.006), (0.30, 0.75, CEIL - 0.003), coll, black))
+    for k in range(7):
+        _add(root, U.box(f"emiş menfezi lamel {k}", (0.58, 0.004, 0.008), (0.30, 0.62 + k * 0.042, CEIL - 0.007),
+                         coll, [M["steel"]]))
+
+    # Equipment on the deck.
+    aw, ad, ah = C.AC_INDOOR
+    ux, uy = 0.30, 0.35
+    _add(root,
+         U.rounded_box("klima iç ünite (kanallı)", (aw, ad, ah), 0.01, (ux, uy, deck_top + ah / 2), coll,
+                       [M["white-appliance"]]),
+         U.box("üfleme kanalı", (0.70, 1.20, 0.15), (ux + 0.05, uy - ad / 2 - 0.60, deck_top + 0.085), coll, [galv]),
+         U.box("üfleme kanalı ağız", (1.40, 0.12, 0.06), (0.40, -1.15, deck_top + 0.03), coll, [galv]),
+         U.box("emiş plenumu", (0.62, 0.32, 0.12), (0.30, 0.75, deck_top + 0.06), coll, [galv]),
+         U.box("elektrik panosu", (0.40, 0.14, 0.24), (-1.50, 0.95, deck_top + 0.12), coll, [M["cabinet"]],
+               bevel=0.004),
+         U.box("LED sürücü kutusu", (0.25, 0.10, 0.05), (-1.00, 1.05, deck_top + 0.025), coll, black),
+         U.box("ekran oynatıcı", (0.15, 0.12, 0.04), (0.40, -0.80, deck_top + 0.02), coll, black))
+    pipe_x = ux + aw / 2 - 0.05
+    _add(root,
+         U.cylinder("yoğuşma hattı", 0.012, 0.85, (pipe_x, uy + ad / 2, deck_top + 0.03), coll, white, verts=12,
+                    rot=(-1.5708, 0, 0), origin="bottom"))
+    for k, dx in enumerate((0.0, 0.04)):
+        _add(root, U.cylinder(f"bakır hat {k}", 0.008, Z(C.ROOF_Z) - deck_top - 0.12, (1.30 + dx, 0.90, deck_top + 0.12),
+                              coll, [copper], verts=12))
+
+    # Lights under the deck.
     lights = {"area": [], "point": [], "emit": [M["bulb"]]}
     led_panel = Mt.principled("ceiling led panel", (0.95, 0.95, 0.95, 1), rough=0.4, emission="led-warm")
     lights["emit"].append(led_panel)
     for k, lx in enumerate((-0.9, 0.9)):
-        U.parent(U.box(f"tavan LED panel {k}", (0.6, 0.6, 0.008), (lx, 0.25, Z(2.731)), coll, [led_panel]), roof)
+        _add(root, U.box(f"tavan LED panel {k}", (0.6, 0.6, 0.008), (lx, 0.25, CEIL - 0.004), coll, [led_panel]))
         data = bpy.data.lights.new(f"tavan ışığı {k}", "AREA")
         data.shape, data.size = "SQUARE", 0.6
         data.color = (1.0, 0.86, 0.68)
         data.energy = 0.0
         obj = bpy.data.objects.new(f"tavan ışığı {k}", data)
         coll.objects.link(obj)
-        obj.location = (lx, 0.25, Z(2.725))
-        U.parent(obj, roof)
+        obj.location = (lx, 0.25, CEIL - 0.01)
+        _add(root, obj)
         lights["area"].append((data, 160.0))
     for k, px in enumerate((-0.65, 0.40, 1.40)):
-        p = pendant(M, coll, f"sarkıt lamba {k}", (px, -0.98, Z(2.735)), 0.30)
-        U.parent(p, roof)
+        _add(root, pendant(M, coll, f"sarkıt lamba {k}", (px, -0.98, CEIL), 0.18))
         data = bpy.data.lights.new(f"sarkıt ışığı {k}", "POINT")
         data.shadow_soft_size = 0.03
         data.color = (1.0, 0.8, 0.55)
         data.energy = 0.0
         obj = bpy.data.objects.new(f"sarkıt ışığı {k}", data)
         coll.objects.link(obj)
-        obj.location = (px, -0.98, Z(2.735) - 0.30 - 0.16)  # inside the shade
-        U.parent(obj, roof)
+        obj.location = (px, -0.98, CEIL - 0.18 - 0.16)  # inside the shade
+        _add(root, obj)
         lights["point"].append((data, 22.0))
-    for obj in roof.children:
-        if not obj.name.startswith("klima"):
-            U.show_tree(obj, roof_in)
+    return root, lights
+
+
+def build(M):
+    coll = U.collection("07 İç mekân")
+    ecoll = U.collection("08 Ekipman")
+    i0, i1 = C.phase("interior")
+    e0, e1 = C.phase("equipment")
+
+    floor = U.slab("zemin laminat", 0.11, Z(C.FLOOR_H - 0.012), Z(C.FLOOR_H), [M["floor"]], coll)
+    U.arrive(floor, i0, i0 + 12, offset=(0, 0, 1.5), interp="EXPO")
+
+    deck, lights = service_deck(M, coll)
+    U.arrive(deck, C.phase("finale")[0], C.phase("finale")[0] + 14, offset=(0, 0, 3.0), interp="BACK",
+             visible=False)
+    U.show_tree(deck, C.phase("finale")[0])
 
     # Cabinets and counters.
     front_body, front_top = _counter(M, coll, "ön tezgâh", -1.42, 1.98, -1, doors_steel=(1, 2))

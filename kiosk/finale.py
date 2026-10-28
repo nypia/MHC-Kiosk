@@ -20,17 +20,18 @@ def animate(M, roof, hatch, world_bg, sun, lights):
     home = roof.location.copy()
     away = home + Vector((7.5, 2.0, 6.0))
 
-    # Crane the roof module (with ceiling, pendants and condenser) off ...
+    # Crane the roof module (with the condenser) off ...
     U.key(roof, "location", r0, home, "SINE", "EASE_IN_OUT")
     U.key(roof, "location", r0 + 14, home + Vector((0, 0, 1.4)), "SINE", "EASE_IN_OUT")
     U.key(roof, "location", r1, away)
     U.hide_tree(roof, r1)
-    # ... and back on once the fit-out is done.
-    U.key(roof, "location", f0, away, "BACK", "EASE_OUT")
-    U.key(roof, "location", f0 + 36, home)
-    U.show_tree(roof, f0)
+    # ... and back on once the fit-out and the service deck are in.
+    land = f0 + 14
+    U.key(roof, "location", land, away, "BACK", "EASE_OUT")
+    U.key(roof, "location", land + 32, home)
+    U.show_tree(roof, land)
 
-    on0, on1 = f0 + 38, f0 + 60
+    on0, on1 = land + 34, land + 52
     for data, energy in lights["area"] + lights["point"]:
         _key_value(data, "energy", ((on0, 0.0), (on1, energy)))
     for mat, strength in zip(lights["emit"], (30.0, 6.0, 8.0)):
@@ -50,5 +51,5 @@ def animate(M, roof, hatch, world_bg, sun, lights):
 
     # Pick-up hatch slides open.
     h = hatch.location.copy()
-    U.key(hatch, "location", f0 + 66, h, "SINE", "EASE_IN_OUT")
-    U.key(hatch, "location", f0 + 90, h + Vector((0, 0, 0.50)))
+    U.key(hatch, "location", on1 + 2, h, "SINE", "EASE_IN_OUT")
+    U.key(hatch, "location", on1 + 24, h + Vector((0, 0, 0.50)))

@@ -8,56 +8,13 @@ import math
 from mathutils import Matrix, Vector
 
 from . import config as C
+from . import layout as L
 from . import materials as Mt
 from . import util as U
 
 Z = C.z
 F = C.f
 T = U.TOTAL
-LOOP_START = U.BREAKS[7]  # front-left corner: where every wrap-around sequence begins
-
-
-def _openings():
-    """(s0, s1, z0, z1) of each wall opening, z relative to BASE_Z."""
-    return [
-        (U.s_front(C.WIN_X[0]), U.s_front(C.WIN_X[1]), C.WIN_SILL, C.WIN_HEAD),
-        (U.s_right(C.DOOR_Y[0]), U.s_right(C.DOOR_Y[1]), C.SKIRT_H, C.DOOR_HEAD),
-    ]
-
-
-def _loop_pos(s):
-    """Position of s along the loop measured from LOOP_START, in [0, T)."""
-    return (s - LOOP_START) % T
-
-
-def _free_ranges(z0, z1):
-    """Arc-length ranges around the loop not blocked by an opening at heights z0..z1."""
-    cuts = sorted((_loop_pos(a), _loop_pos(a) + (b - a))
-                  for a, b, oz0, oz1 in _openings() if oz0 < z1 and oz1 > z0)
-    out, cur = [], 0.0
-    for a, b in cuts:
-        if a > cur:
-            out.append((LOOP_START + cur, LOOP_START + a))
-        cur = max(cur, b)
-    if cur < T:
-        out.append((LOOP_START + cur, LOOP_START + T))
-    return out
-
-
-def _segments_of_vertical(s, half_w, z0, z1, margin=0.012):
-    """Z-ranges of a vertical element at s (width 2*half_w) avoiding openings."""
-    ranges = [(z0, z1)]
-    for a, b, oz0, oz1 in _openings():
-        p, pa = _loop_pos(s), _loop_pos(a)
-        if pa - half_w - margin <= p <= pa + (b - a) + half_w + margin:
-            nxt = []
-            for r0, r1 in ranges:
-                if r0 < oz0:
-                    nxt.append((r0, min(r1, oz0)))
-                if r1 > oz1:
-                    nxt.append((max(r0, oz1), r1))
-            ranges = nxt
-    return [(a, b) for a, b in ranges if b - a > 0.04]
 
 
 def _tilt_euler(n, angle):
@@ -72,34 +29,38 @@ def build_chassis(M):
     f0, f1 = C.phase("chassis")
     steel = [M["steel-frame"]] * 3
 
-    base, _ = U.band("şasi taban çerçeve", 0, T, 0.05, 0.17, Z(0.0), Z(C.SKIRT_H), steel, col)
+    base, _ = U.band("şasi taban çerçeve", 0, T, 0.05, 0.17, Z(0.0), Z(C.FRAME_BASE_H), steel, col)
     U.arrive(base, f0, f0 + 20, offset=(0, 0, 2.0), interp="BACK")
 
     joists = []
-    for i, x in enumerate((-2.0, -1.0, 0.0, 1.0, 2.0)):
-        j = U.box(f"şasi kiriş {i}", (0.06, 2 * (C.B - 0.17), 0.10), (x, 0, Z(0.07)), col, [M["steel-frame"]])
+    for i, x in enumerate(L.JOIST_X):
+        j = U.box(f"şasi kiriş {i}", (0.05, 2 * (C.B - 0.17), 0.10), (x, 0, Z(C.FRAME_BASE_H - 0.05)), col,
+                  [M["steel-frame"]])
         joists.append(j)
     for j, st, en in U.stagger(joists, f0 + 12, f0 + 40, 12):
         U.arrive(j, st, en, offset=(0, 0, 1.5), interp="BACK")
 
-    deck = U.slab("şasi döşeme plakası", 0.11, Z(C.SKIRT_H), Z(C.FLOOR_H - 0.012), [M["steel-frame"]], col)
+    deck = U.slab("döşeme kontrplak", 0.11, Z(C.FRAME_BASE_H), Z(C.FLOOR_H - 0.010), [M["steel-frame"]], col)
     U.arrive(deck, f0 + 34, f0 + 52, offset=(0, 0, 1.2), interp="BACK")
 
-    # Posts: corners, window jambs, door jambs, mid-walls.
-    post_s = [U.BREAKS[i] + U.CQ / 2 for i in (1, 3, 5, 7)]
-    post_s += [U.s_front(C.WIN_X[0] - 0.03), U.s_front(C.WIN_X[1] + 0.03),
-               U.s_right(C.DOOR_Y[0] - 0.03), U.s_right(C.DOOR_Y[1] + 0.03),
-               U.s_back(-1.4), U.s_back(0.0), U.s_back(1.4), U.s_left(0.0)]
-    post_s.sort(key=_loop_pos)
-    h = 2.74 - C.SKIRT_H
+    h = C.RING_Z[0] - C.FRAME_BASE_H
     posts = []
-    for i, s in enumerate(post_s):
+    for pid, s, _role in L.posts():
         x, y = U.at(s, 0.14)
         rz = math.atan2(U.tangent(s).y, U.tangent(s).x)
-        posts.append(U.box(f"şasi dikme {i}", (0.06, 0.06, h), (x, y, Z(C.SKIRT_H)), col,
+        posts.append(U.box(f"şasi dikme {pid}", (0.06, 0.06, h), (x, y, Z(C.FRAME_BASE_H)), col,
                            [M["steel-frame"]], rot=(0, 0, rz), origin="bottom"))
-    for p, st, en in U.stagger(posts, f0 + 44, f0 + 92, 14):
+    for p, st, en in U.stagger(posts, f0 + 44, f0 + 86, 14):
         U.grow(p, st, en)
+
+    ribs = []
+    for k, (a0, a1) in enumerate(L.ARCS):
+        for zr in L.RIB_Z:
+            rib, _ = U.band(f"köşe kaburga {k + 1} {zr:.2f}", a0, a1, 0.11, 0.13, Z(zr - 0.02), Z(zr + 0.02),
+                            steel, col)
+            ribs.append(rib)
+    for r_, st, en in U.stagger(ribs, f0 + 80, f0 + 96, 8):
+        U.arrive(r_, st, en, offset=(0, 0, 0.6), interp="BACK")
 
     beams = []
     wl = C.WIN_X[1] - C.WIN_X[0]
@@ -112,50 +73,22 @@ def build_chassis(M):
     for b, st, en in U.stagger(beams, f0 + 88, f0 + 100, 10):
         U.arrive(b, st, en, offset=(0, 0, 0.8), interp="BACK")
 
-    ring, _ = U.band("şasi üst çerçeve", 0, T, 0.11, 0.17, Z(2.74), Z(2.80), steel, col)
+    ring, _ = U.band("şasi üst çerçeve", 0, T, 0.11, 0.17, Z(C.RING_Z[0]), Z(C.RING_Z[1]), steel, col)
     U.arrive(ring, f0 + 96, f1, offset=(0, 0, 2.5), interp="BACK")
 
 
 # ====================================================================== panels
-def _panel_pieces():
-    """(s0, s1, kind) around the loop; kind: wall | window | door."""
-    b = U.BREAKS
-    pieces = [
-        (b[8], T + U.s_front(C.WIN_X[0]), "wall"),
-        (U.s_front(C.WIN_X[0]), U.s_front(C.WIN_X[1]), "window"),
-        (U.s_front(C.WIN_X[1]), b[2], "wall"),
-        (b[2], U.s_right(C.DOOR_Y[0]), "wall"),
-        (U.s_right(C.DOOR_Y[0]), U.s_right(C.DOOR_Y[1]), "door"),
-        (U.s_right(C.DOOR_Y[1]), b[3], "wall"),
-        (b[3], b[4], "wall"),
-    ]
-    back = [b[4] + (b[5] - b[4]) * k / 4 for k in range(5)]
-    pieces += [(back[k], back[k + 1], "wall") for k in range(4)]
-    pieces.append((b[5], b[6], "wall"))
-    left = [b[6] + (b[7] - b[6]) * k / 2 for k in range(3)]
-    pieces += [(left[k], left[k + 1], "wall") for k in range(2)]
-    pieces.append((b[7], b[8], "wall"))
-    return sorted(pieces, key=lambda p: _loop_pos(p[0] + 1e-6))
-
-
 def build_panels(M):
     col = U.collection("03 Sandviç panel")
     f0, f1 = C.phase("panels")
     mats = [M["anthracite"], M["panel-white"], M["panel-core"]]
-    gap = 0.0015
     groups, cutouts = [], []
-    for i, (s0, s1, kind) in enumerate(_panel_pieces()):
-        s0, s1 = s0 + gap, s1 - gap
-        if kind == "wall":
-            spans = [(C.SKIRT_H, 2.80, False)]
-        elif kind == "window":
-            spans = [(C.SKIRT_H, C.WIN_SILL, False), (C.WIN_SILL, C.WIN_HEAD, True), (C.WIN_HEAD, 2.80, False)]
-        else:
-            spans = [(C.SKIRT_H, C.DOOR_HEAD, True), (C.DOOR_HEAD, 2.80, False)]
+    for pn in L.panels():
+        spans = pn["spans"]
         group = []
         for k, (z0, z1, is_cut) in enumerate(spans):
-            obj, n = U.band(f"panel {i:02d}{'abc'[k] if len(spans) > 1 else ''}", s0, s1, *C.PANEL_D,
-                            Z(z0), Z(z1), mats, col)
+            obj, n = U.band(f"panel {pn['id']}{'abc'[k] if len(spans) > 1 else ''}", pn["s0"], pn["s1"],
+                            *C.PANEL_D, Z(z0), Z(z1), mats, col)
             group.append((obj, n))
             if is_cut:
                 cutouts.append((obj, n))
@@ -165,7 +98,7 @@ def build_panels(M):
         for k, (obj, n) in enumerate(group):
             U.arrive(obj, st + 2 * k, en + 2 * k, offset=n * 1.6 + Vector((0, 0, 1.0)), interp="BACK")
 
-    roof = U.slab("çatı paneli", 0.05, Z(2.80), Z(C.ROOF_Z), [M["anthracite"]], col)
+    roof = U.slab("çatı paneli", 0.05, Z(C.PANEL_TOP), Z(C.ROOF_Z), [M["anthracite"]], col)
     U.arrive(roof, f1 - 16, f1, offset=(0, 0, 3.0), interp="BACK")
     return roof, cutouts
 
@@ -194,28 +127,23 @@ def build_cladding(M):
     U.arrive(skirt, f0, f0 + 14, offset=(0, 0, -0.2), interp="EXPO")
 
     rails = []
-    for zr in (0.30, 1.30, 2.30):
-        for k, (a, b) in enumerate(_free_ranges(zr, zr + 0.045)):
-            obj, n = U.band(f"karkas {zr:.2f} {k}", a + 0.002, b - 0.002, *C.BATTEN_D, Z(zr), Z(zr + 0.045),
-                            [M["batten"]] * 3, col)
-            rails.append((obj, n))
+    for k, (zr, a, b) in enumerate(L.rails()):
+        obj, n = U.band(f"karkas {zr:.2f} {k}", a, b, *C.BATTEN_D, Z(zr), Z(zr + L.RAIL_H), [M["batten"]] * 3, col)
+        rails.append((obj, n))
     for (obj, n), st, en in U.stagger(rails, f0 + 4, f0 + 22, 10):
         U.arrive(obj, st, en, offset=n * 0.4, interp="EXPO")
 
-    count = round(T / C.SLAT_PITCH)
-    pitch = T / count
     d = sum(C.SLAT_D) / 2
     depth = C.SLAT_D[1] - C.SLAT_D[0]
     slats = []
-    for i in range(count):
-        s = LOOP_START + (i + 0.5) * pitch
+    for sid, s, segs in L.slats()[0]:
         x, y = U.at(s, d)
         t = U.tangent(s)
         rz = math.atan2(t.y, t.x)
         pieces = []
-        for z0, z1 in _segments_of_vertical(s, C.SLAT_W / 2, C.SKIRT_H + 0.005, C.FASCIA_Z[0]):
-            L = round(z1 - z0, 3)
-            pieces.append(U.box(f"çıta {i:03d}", (C.SLAT_W, depth, L), (x, y, Z((z0 + z1) / 2)), col,
+        for z0, z1 in segs:
+            length = round(z1 - z0, 3)
+            pieces.append(U.box(f"çıta {sid}", (C.SLAT_W, depth, length), (x, y, Z((z0 + z1) / 2)), col,
                                 [M["walnut"]], rot=(0, 0, rz), bevel=0.002))
         slats.append((pieces, U.normal(s)))
     for (pieces, n), st, en in U.stagger(slats, f0 + 20, f1, 9):
@@ -233,17 +161,9 @@ def build_fascia(M, roof):
     backing, _ = U.band("saçak derz fonu", 0, T, 0.03, 0.05, z0, z1, [M["alucobond-edge"]] * 3, col)
     U.arrive(backing, f0, f0 + 10, offset=(0, 0, 0.3), interp="EXPO")
 
-    b = U.BREAKS
-    cuts = [b[8] + (T + b[1] - b[8]) * k / 4 for k in range(5)]
-    cuts += [b[2], b[2] + (b[3] - b[2]) / 2, b[3]]
-    cuts += [b[4] + (b[5] - b[4]) * k / 4 for k in range(5)]
-    cuts += [b[6], b[6] + (b[7] - b[6]) / 2, b[7], b[8]]
-    cuts = sorted({round(_loop_pos(c), 6) for c in cuts})
-    cuts.append(T)
     cassettes = []
-    for k in range(len(cuts) - 1):
-        s0, s1 = LOOP_START + cuts[k] + 0.004, LOOP_START + cuts[k + 1] - 0.004
-        obj, n = U.band(f"alucobond kaset {k:02d}", s0, s1, -0.018, 0.03, z0, z1, alu, col)
+    for kid, s0, s1, _curved in L.cassettes():
+        obj, n = U.band(f"alucobond kaset {kid}", s0, s1, *L.FASCIA_D, z0, z1, alu, col)
         cassettes.append((obj, n))
     for (obj, n), st, en in U.stagger(cassettes, f0 + 6, f1 - 10, 12):
         U.arrive(obj, st, en, offset=n * 0.7 + Vector((0, 0, 0.25)), interp="BACK")
@@ -317,7 +237,7 @@ def build_glazing(M):
     disp = U.quad("menü ekranı panel", scr_w - 0.03, scr_h - 0.03, col, [menu], loc=(0, -0.0205, 0))
     U.parent(disp, screen)
     for k, dx in enumerate((-0.4, 0.4)):
-        rod_h = Z(2.80) - Z(scr_z + scr_h / 2)
+        rod_h = Z(C.CEILING_Z) - Z(scr_z + scr_h / 2)
         rod = U.cylinder(f"ekran askı {k}", 0.008, rod_h, (dx, 0.0, scr_h / 2), col, [M["steel"]], verts=12)
         U.parent(rod, screen)
     U.arrive(screen, f0 + 16, f0 + 34, offset=(0, 0.9, 0.5), interp="BACK", visible=False)

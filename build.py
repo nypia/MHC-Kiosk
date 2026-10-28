@@ -64,7 +64,7 @@ def main():
     shell.build_cladding(M)
     shell.build_fascia(M, roof)
     parts = shell.build_glazing(M)
-    lights = interior.build(M, roof)
+    lights = interior.build(M)
     site.build_terrace(M)
     finale.animate(M, roof=roof, hatch=parts["hatch"], world_bg=bg, sun=sun, lights=lights)
     cameras.build(sc)

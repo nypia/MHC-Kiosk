@@ -34,7 +34,13 @@ BASE_Z = PAD_H        # underside of kiosk chassis (absolute)
 FLOOR_H = 0.16            # finished interior floor
 SKIRT_H = 0.14            # black plinth band
 FASCIA_Z = (2.40, HEIGHT) # Alucobond crown band
-ROOF_Z = 2.86             # top of roof panel
+ROOF_Z = 2.96             # top of roof panel (1.5 % fall to the rear-right outlet, drawn flat)
+FRAME_BASE_H = 0.12       # top of the 120x120 base frame: posts and wall panels start here
+PANEL_TOP = 2.90          # top of wall panels = top of the ring beam
+RING_Z = (2.84, 2.90)     # 60x60 top ring beam (raised to give the service plenum ~0.28 m)
+CEILING_Z = 2.50          # underside of the suspended service deck (clear height 2.34 m)
+DECK_T = 0.064            # deck build-up: 6 mm white board + 40x40 steel grid + 18 mm plywood
+AC_INDOOR = (0.90, 0.45, 0.20)  # slim ducted indoor unit envelope (W x D x H)
 
 # Openings (relative to BASE_Z). Front face is y = -B, x measured along it.
 WIN_X = (-1.20, 2.00)     # front glazing bay
@@ -42,9 +48,24 @@ WIN_SILL = 1.08          # flush with the 0.90 m worktop (+ floor)
 WIN_HEAD = 2.20
 SCREEN_X = (-0.25, 1.05)  # middle bay: 55" menu screen behind the glass
 DOOR_Y = (-0.45, 0.45)    # door on +X side
-DOOR_HEAD = 2.10
+DOOR_HEAD = 2.20          # clear door height 2.04 m above the finished floor
 
 COUNTER_H = 0.90          # worktop height above finished floor
+
+# Suggested steel and cladding sections (drawings + model). To be confirmed by
+# a structural engineer before fabrication.
+PROFILES = {
+    "taban çerçeve": "120×120×4 kutu profil, köşeler hadde bükümlü",
+    "taban kiriş": "100×50×3 kutu profil",
+    "dikme": "60×60×3 kutu profil",
+    "üst çerçeve": "60×60×3 kutu profil, köşeler hadde bükümlü",
+    "lento / denizlik": "60×100×3 kutu profil",
+    "köşe kaburga": "40×20×2 kutu profil, R≈330 hadde bükümlü",
+    "çatı aşığı": "60×40×2 kutu profil",
+    "asma kat taşıyıcı": "40×40×2 kutu profil",
+    "asma kat askı": "M10 dişli çubuk + 40×40×4 L köşebent",
+    "karkas": "siyah eloksal alüminyum omega 45×22",
+}
 
 
 def z(h):
