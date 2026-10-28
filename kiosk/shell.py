@@ -199,7 +199,7 @@ def _blade_sign(M, col):
                         verts=96, rot=up, origin="center", caps=False), root)
     mats = {"fg": M["cream"], "accent": M["logo-accent"]}
     for side, rz in ((-1, 0.0), (1, math.pi)):
-        U.parent(logo3d.logo(f"daire tabela rozet {side}", "badge", 2 * B["r"], 0.004, mats, col,
+        U.parent(logo3d.logo(f"daire tabela rozet {side}", "badge", 2 * B["r"] * B["seal"], 0.004, mats, col,
                              loc=(0, side * (B["t"] / 2 + 0.002), 0), rot=(math.pi / 2, 0, rz)), root)
     arm_len = B["gap"] + 0.02
     for k, dz in enumerate(B["arms"]):

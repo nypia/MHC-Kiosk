@@ -28,7 +28,7 @@ def _curve(name, shapes, scale, depth, mat, coll):
     cu.dimensions = "2D"
     cu.fill_mode = "BOTH"
     cu.extrude = depth / 2
-    cu.bevel_depth = min(depth * 0.08, 0.002)
+    cu.bevel_depth = min(depth * 0.04, 0.0008)
     for shape in shapes:
         for ring in [shape["outer"]] + shape["holes"]:
             pts = ring[:-1] if ring[0] == ring[-1] else ring

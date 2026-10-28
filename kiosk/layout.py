@@ -6,6 +6,8 @@ heights are relative to BASE_Z. Every part gets a fabrication number:
 D = steel post, P = wall panel, KM = curved corner module, K = Alucobond
 cassette, Ç = slat.
 """
+import json
+
 from . import config as C
 from . import outline as O
 
@@ -257,10 +259,10 @@ def window():
 # (MHC over M-mark-LA) comes from kiosk/art/logo/logo_geometry.json.
 LETTER_DEPTH = 0.04   # channel letter return
 LETTER_GAP = 0.015    # stand-off from the cassette face
-LOGO_ASPECT = 2.831   # wordmark width / height (brand.py)
-# face -> (position along the face, z centre, logo height)
-LOGO = {"front": (0.0, 2.70, 0.46), "left": (0.30, 2.70, 0.26)}
-BLADE = dict(y=-0.70, z=2.62, r=0.36, t=0.06, gap=0.12, arms=(-0.16, 0.16))
+LOGO_ASPECT = json.loads((C.ROOT / "kiosk" / "art" / "logo" / "logo_geometry.json").read_text())["wordmark"]["aspect"]
+# face -> (position along the face, z centre, logo height): horizontal lockup, seal + MHC MOLA
+LOGO = {"front": (0.0, 2.70, 0.46), "left": (0.27, 2.70, 0.30)}  # left: clear of the blade sign
+BLADE = dict(y=-0.70, z=2.62, r=0.36, t=0.06, gap=0.12, arms=(-0.16, 0.16), seal=0.92)  # seal = share of disk
 
 
 def blade_centre():

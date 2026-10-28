@@ -913,20 +913,20 @@ def s11(sh):
     v.dim_v(-C.B, C.B, -C.A, -8)
     v.caption(-C.A, -C.B - 0.45, "ÇATI PLANI")
     # channel-letter logo (front) and blade sign, 1:20 / 1:10
-    g = sh.view(130, 142 - 2.40 * 50, 20)
+    g = sh.view(140, 142 - 2.40 * 50, 20)
     xf, zf, hf = L.LOGO["front"]
     wf = hf * L.LOGO_ASPECT
-    g.rect(-1.0, FZ0, 1.0, FZ1, fill="alu", lw="thin")
+    g.rect(-1.25, FZ0, 1.25, FZ1, fill="alu", lw="thin")
     V.logo(g, "wordmark", 0, zf, hf)
     g.dim_h(-wf / 2, wf / 2, FZ1, 6)
-    g.dim_v(zf - hf / 2, zf + hf / 2, 1.0, 6)
-    g.chain_v([FZ0, FZ1], -1.0, -6)
-    g.caption(-1.0, FZ0 - 0.12, "ÖN BANT LOGOSU · kanal harf, ortada", size=2.6)
+    g.dim_v(zf - hf / 2, zf + hf / 2, 1.25, 6)
+    g.chain_v([FZ0, FZ1], -1.25, -6)
+    g.caption(-1.25, FZ0 - 0.12, "ÖN BANT LOGOSU · kanal harf, ortada", size=2.6)
     B = L.BLADE
     t = sh.view(60, 0, 10)
     t.oy = 52 + B["r"] * t.k
     t.circle(0, 0, B["r"], fill="#1f1d1c", lw="thin")
-    V.logo(t, "badge", 0, 0, 2 * B["r"])
+    V.logo(t, "badge", 0, 0, 2 * B["r"] * B["seal"])
     t.dim_h(-B["r"], B["r"], -B["r"], -5, text=f"Ø{mm(2 * B['r'])}")
     k = sh.view(130, t.oy, 10)
     k.rect(-B["t"] / 2, -B["r"], B["t"] / 2, B["r"], fill="#1f1d1c", lw="thin")
@@ -942,8 +942,8 @@ def s11(sh):
     hl = L.LOGO["left"][2]
     sh.paragraph(250, 180, [
         "**Logo (MHC Mola) ve tabela",
-        f"• Ön bant: kanal harf logo {mm(wf)} × {mm(hf)}, ortada, krem; \"O\" içindeki",
-        "   iki çubuk ceviz tonu. Harf derinliği 40, kasetten 15 mm önde, arkadan LED.",
+        f"• Ön bant: rozet + MHC MOLA kanal harf {mm(wf)} × {mm(hf)}, ortada, krem;",
+        "   yol çizgisi ve YOL ÜSTÜ ceviz tonu. Derinlik 40, kasetten 15 mm önde, arkadan LED.",
         f"• Sol yan bant: aynı logo {mm(hl * L.LOGO_ASPECT)} × {mm(hl)}.",
         f"• Daire tabela: Ø{mm(2 * B['r'])}, kalınlık {mm(B['t'])}, çift taraflı rozet, kenarı ışıklı;",
         f"   sol duvardan {mm(B['gap'])} mm dışarıda, ön köşeye {mm(by + C.B)} mm, merkez +{mm(B['z'])}.",

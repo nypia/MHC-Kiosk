@@ -158,7 +158,7 @@ def blade(v, face):
     if face in ("front", "back"):
         u = G.project(face, bx, by)
         v.circle(u, B["z"], B["r"], fill="#1f1d1c", lw="thin", z=4.3)
-        logo(v, "badge", u, B["z"], 2 * B["r"])
+        logo(v, "badge", u, B["z"], 2 * B["r"] * B["seal"])
         wall = G.project(face, -C.A + L.FASCIA_D[0], by)
         for dz in B["arms"]:
             v.rect(min(u, wall), B["z"] + dz - 0.015, max(u, wall), B["z"] + dz + 0.015, fill="#202020", lw=0, z=4.2)
