@@ -113,7 +113,8 @@ def _raw_panel_pieces():
     pieces = [
         (B[8], T + O.s_front(C.WIN_X[0]), "wall"),
         (O.s_front(C.WIN_X[0]), O.s_front(C.WIN_X[1]), "window"),
-        (O.s_front(C.WIN_X[1]), B[2], "wall"),
+        (O.s_front(C.WIN_X[1]), B[1], "wall"),
+        (B[1], B[2], "wall"),
         (B[2], O.s_right(C.DOOR_Y[0]), "wall"),
         (O.s_right(C.DOOR_Y[0]), O.s_right(C.DOOR_Y[1]), "door"),
         (O.s_right(C.DOOR_Y[1]), B[3], "wall"),
@@ -273,7 +274,7 @@ DECK = dict(
     board=0.006, grid=0.040, ply=0.018,
     carriers_x=JOIST_X, hangers_y=(-0.7, 0.7),
     unit=(0.30, 0.35),               # ducted indoor unit centre (x, y)
-    supply=(0.40, -1.15, 1.40, 0.07),  # linear slot over the window: x, y, w, d
+    supply=(0.0, -1.15, 1.40, 0.07),   # linear slot over the window: x, y, w, d
     ret=(0.30, 0.75, 0.60, 0.30),      # return grille
     hatch=(-1.55, 0.05, 0.60),         # access hatch centre + size
     panel=(-1.50, 0.95, 0.40, 0.14, 0.24),  # electrical panel x, y, w, d, h

@@ -295,12 +295,12 @@ def s02(sh):
 # ============================================================================ 03
 STEP_TEXT = [
     ("01_sasi", "1 · Şasi", ["Taban çerçeve 120×120×4 (köşeler hadde bükümlü) ve 5 ara",
-                            "kiriş kaynatılır. 15 dikme (D01–D15), lento, denizlik,",
+                            f"kiriş kaynatılır. {len(L.posts())} dikme (D01–D{len(L.posts()):02d}), lento, denizlik,",
                             "köşe kaburgaları ve üst çerçeve kurulur. Köşegen farkı ≤ 3 mm."]),
-    ("02_panel", "2 · Sandviç panel + çatı", ["Düz yüzlere 60 mm paneller (P01–P11), köşelere kavisli",
+    ("02_panel", "2 · Sandviç panel + çatı", [f"Düz yüzlere 60 mm paneller (P01–P{sum(1 for p in L.panels() if not p['curved']):02d}), köşelere kavisli",
                                              "köşe modülleri (KM1–KM4). Çatı paneli %1,5 eğimle",
                                              "kapanır (önce 7. adımdaki asma kat iskeleti asılır)."]),
-    ("03_bosluk", "3 · Boşluklar", ["Pencere 3200×1120 ve kapı 900×2060 boşlukları",
+    ("03_bosluk", "3 · Boşluklar", [f"Pencere {mm(C.WIN_X[1] - C.WIN_X[0])}×{mm(C.WIN_HEAD - C.WIN_SILL)} ve kapı {mm(C.DOOR_Y[1] - C.DOOR_Y[0])}×{mm(C.DOOR_HEAD - C.SKIRT_H)} boşlukları",
                                     "lento/denizlik hizasından kesilir; kesik panel",
                                     "kenarları söve kaplamasıyla kapanır (pafta 09)."]),
     ("04_cita", "4 · Karkas ve çıta", ["Süpürgelik, siyah Ω karkas (+300 / +1300 / +2300),",
@@ -345,18 +345,18 @@ def _frame_rows():
     sd = 2 * O.HY
     arc = lambda d: math.pi / 2 * (O.R - d)  # noqa: E731
     posts = L.posts()
-    s = {pid: sv for pid, sv, _ in posts}
 
-    def between(a, b):
-        return (L.loop_pos(s[b]) - L.loop_pos(s[a])) - 0.06
-    win_l = between("D03", "D04")
-    door_l = between("D06", "D07")
+    def between(role):
+        a, b = sorted(L.loop_pos(sv) for _, sv, r in posts if r == role)
+        return b - a - 0.06
+    win_l = between("pencere sövesi")
+    door_l = between("kapı sövesi")
     rows = [
         ("T1", "Taban çerçeve, ön/arka düz", "120×120×4", st, 2),
         ("T2", "Taban çerçeve, yan düz", "120×120×4", sd, 2),
         ("T3", f"Taban çerçeve köşe yayı R{mm(O.R - 0.11)} eksen", "120×120×4", arc(0.11), 4),
         ("T4", "Taban ara kiriş", "100×50×3", 2 * (C.B - 0.17), len(L.JOIST_X)),
-        ("D", "Dikme D01–D15", "60×60×3", C.RING_Z[0] - C.FRAME_BASE_H, len(posts)),
+        ("D", f"Dikme D01–D{len(posts):02d}", "60×60×3", C.RING_Z[0] - C.FRAME_BASE_H, len(posts)),
         ("L1", "Pencere lentosu", "60×100×3", win_l, 1),
         ("L2", "Pencere denizlik kirişi", "60×100×3", win_l, 1),
         ("L3", "Kapı lentosu", "60×100×3", door_l, 1),
@@ -373,9 +373,8 @@ def _frame_rows():
     return rows
 
 
-@sheet("04", "Çelik şasi ve taşıyıcı sistem", "1:30 · 1:50")
-def s04(sh):
-    v = sh.view(118, 214, 30)
+def chassis_plan(v, label_size=2.0):
+    """Base frame, joists, posts (numbered), lifting feet, with dimensions."""
     v.poly(G.band(0, O.TOTAL, 0.05, 0.17), fill="steel", lw="thin")
     v.poly(G.ring(0.05), fill=None, lw="thin")
     v.poly(G.ring(0.17), fill=None, lw="thin")
@@ -388,7 +387,7 @@ def s04(sh):
         c = [(x + tx * a + nx * b, y + ty * a + ny * b) for a, b in ((-.03, -.03), (.03, -.03), (.03, .03), (-.03, .03))]
         v.poly(c, fill="#2b2b2b", lw="thin", z=4)
         lx, ly = O.at(s, 0.30)
-        v.text(lx, ly, pid, size=2.0, ha="center", va="center", weight="medium")
+        v.text(lx, ly, pid, size=label_size, ha="center", va="center", weight="medium")
     for cx, cy in ((O.HX, O.HY), (-O.HX, O.HY), (-O.HX, -O.HY), (O.HX, -O.HY)):
         v.circle(cx + math.copysign(O.R - 0.11, cx) * 0.707, cy + math.copysign(O.R - 0.11, cy) * 0.707, 0.04,
                  fill="#ffffff", lw="thin", z=5)
@@ -396,13 +395,45 @@ def s04(sh):
     v.chain_h([-C.A + 0.05] + list(L.JOIST_X) + [C.A - 0.05], -C.B, -14)
     v.dim_v(-C.B + 0.05, C.B - 0.05, C.A, 20)
     v.chain_v([-C.B + 0.05, -(C.B - 0.17), C.B - 0.17, C.B - 0.05], C.A, 11)
-    front_posts = sorted(O.at(s, 0.14)[0] for _, s, _ in L.posts() if L.face_of(s) in ("front",)
-                         or abs(O.at(s, 0.14)[1] + C.B - 0.14) < 1e-3)
+    front_posts = sorted(O.at(s, 0.14)[0] for _, s, _ in L.posts() if abs(O.at(s, 0.14)[1] + C.B - 0.14) < 1e-3)
     v.chain_h([-C.A + 0.05] + front_posts + [C.A - 0.05], -C.B, -7, size=1.8)
     back_posts = sorted(O.at(s, 0.14)[0] for _, s, _ in L.posts() if abs(O.at(s, 0.14)[1] - (C.B - 0.14)) < 1e-3)
     v.chain_h([-C.A + 0.05] + back_posts + [C.A - 0.05], C.B, 7, size=1.8)
     v.radius(O.HX, O.HY, O.R - 0.11, math.radians(45), f"R{mm(O.R - 0.11)} eksen")
     v.radius(-O.HX, -O.HY, O.R - 0.05, math.radians(225), f"R{mm(O.R - 0.05)} dış")
+
+
+def frame_elevation(e, face, size=1.8):
+    """Steel frame of one face as seen from outside: base frame, posts, ribs, beams, ring."""
+    half = G.HALF[face] - 0.05
+    e.rect(-half, 0, half, C.FRAME_BASE_H, fill="steel", lw="thin")
+    e.rect(-half, C.RING_Z[0], half, C.RING_Z[1], fill="steel", lw="thin")
+    us = []
+    for _, s, _ in L.posts():
+        if G.visible(face, s) or G.facing(face, s) > 0.6:
+            u = G.project(face, *O.at(s, 0.14))
+            if abs(u) <= half + 1e-6:
+                e.rect(u - 0.03, C.FRAME_BASE_H, u + 0.03, C.RING_Z[0], fill="steel", lw="thin")
+                us.append(u)
+    for zr in L.RIB_Z:
+        for sgn in (-1, 1):
+            e.rect(sgn * (G.HALF[face] - O.R), zr - 0.02, sgn * half, zr + 0.02, fill="steel", lw="hair")
+    for name, u0, u1, z0, z1 in G.opening_on(face):
+        if name == "pencere":
+            e.rect(u0, z0 - 0.10, u1, z0, fill="steel", lw="thin")
+        e.rect(u0, z1, u1, z1 + 0.10, fill="steel", lw="thin")
+        e.rect(u0, max(z0, C.FRAME_BASE_H), u1, z1, fill=None, lw="hair")
+    e.chain_v([0, C.FRAME_BASE_H] + sorted({max(z, C.FRAME_BASE_H) for _, _, _, z0, z1 in G.opening_on(face)
+                                            for z in (z0, z1)})
+              + [C.RING_Z[0], C.RING_Z[1]], -half, -6, size=size)
+    e.chain_h([-half] + sorted(us) + [half], 0, -6, size=size)
+    return half
+
+
+@sheet("04", "Çelik şasi ve taşıyıcı sistem", "1:30 · 1:50")
+def s04(sh):
+    v = sh.view(118, 214, 30)
+    chassis_plan(v)
     v.caption(-C.A, -C.B - 1.05, "ŞASİ PLANI (taban çerçeve, kirişler, dikmeler)")
     x0, y0 = v.p(-C.A, -C.B - 1.05)
     sh.text(x0, y0 - 7.5, "Beyaz daire: köşelerde ayarlı ayak M24 + kaldırma kulağı (4 adet). Köşe dikmeleri "
@@ -421,28 +452,10 @@ def s04(sh):
              [[k, f"{v_:.1f}"] for k, v_ in tot.items()], size=2.0, row_h=4.0)
 
     # frame elevations, 1:50
-    for face, ox, oy in (("front", 80, 58), ("right", 196, 58)):
+    for face, ox, oy in (("front", 80, 62), ("right", 196, 62)):
         e = sh.view(ox, oy, 50)
-        half = G.HALF[face] - 0.05
-        e.rect(-half, 0, half, C.FRAME_BASE_H, fill="steel", lw="thin")
-        e.rect(-half, C.RING_Z[0], half, C.RING_Z[1], fill="steel", lw="thin")
-        for _, s, _ in L.posts():
-            if G.visible(face, s) or G.facing(face, s) > 0.6:
-                u = G.project(face, *O.at(s, 0.14))
-                if abs(u) <= half + 1e-6:
-                    e.rect(u - 0.03, C.FRAME_BASE_H, u + 0.03, C.RING_Z[0], fill="steel", lw="thin")
-        for zr in L.RIB_Z:
-            for sgn in (-1, 1):
-                e.rect(sgn * (G.HALF[face] - O.R), zr - 0.02, sgn * half, zr + 0.02, fill="steel", lw="hair")
-        for name, u0, u1, z0, z1 in G.opening_on(face):
-            if name == "pencere":
-                e.rect(u0, z0 - 0.10, u1, z0, fill="steel", lw="thin")
-            e.rect(u0, z1, u1, z1 + 0.10, fill="steel", lw="thin")
-            e.rect(u0, max(z0, C.FRAME_BASE_H), u1, z1, fill=None, lw="hair")
-        e.chain_v([0, C.FRAME_BASE_H] + sorted({max(z, C.FRAME_BASE_H) for _, _, _, z0, z1 in G.opening_on(face)
-                                                for z in (z0, z1)})
-                  + [C.RING_Z[0], C.RING_Z[1]], -half, -6, size=1.8)
-        e.caption(-half, -0.25, f"ÇERÇEVE · {G.FACE_TITLE[face].split(' (')[0]}", size=2.6)
+        half = frame_elevation(e, face)
+        e.caption(-half, -0.32, f"ÇERÇEVE · {G.FACE_TITLE[face].split(' (')[0]}", size=2.6)
 
 
 # ============================================================================ 05
@@ -493,7 +506,8 @@ def s05(sh):
         v.radius(cx, cy, O.R - d, math.radians(ang), f"R{mm(O.R - d)} {lab}", size=1.9)
     v.circle(cx, cy, 0.004, fill="#1a1a1a", lw=0)
     v.leaders([
-        (*O.at(a - 0.2, 0.08), "Sandviç panel 60 mm (P09, arka)"),
+        (*O.at(a - 0.2, 0.08), "Sandviç panel 60 mm (" + next(p["id"] for p in L.panels()
+                                                               if abs(p["s1"] + L.PANEL_GAP - a) < 1e-6) + ", arka)"),
         (*O.at((a + b) / 2 - 0.12, 0.08), "KM: 0,8 mm galvaniz bükme sac + 50 mm taşyünü + iç sac"),
         (*O.at((a + b) / 2 + 0.15, 0.12), "Kaburga 40×20×2 hadde bükümlü (+1300, +2300)"),
         (*O.at(a, 0.15), "Teğet dikme 60×60×3"),

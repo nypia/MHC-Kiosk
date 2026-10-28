@@ -194,6 +194,7 @@ class View:
     def __init__(self, sheet, ox, oy, scale):
         self.s, self.ox, self.oy, self.scale = sheet, ox, oy, scale
         self.k = 1000.0 / scale
+        self.ts = 1.0          # text scale for dimensions / labels (bigger on the workshop sheets)
 
     def p(self, u, v):
         return self.ox + u * self.k, self.oy + v * self.k
@@ -233,6 +234,7 @@ class View:
 
     def dim_h(self, u0, u1, v, off, text=None, size=2.2, ext=True):
         """Horizontal dimension between u0..u1 measured at model height v, drawn `off` mm away."""
+        size *= self.ts
         (x0, y0), (x1, _) = self.p(u0, v), self.p(u1, v)
         yl = y0 + off
         if ext:
@@ -244,10 +246,12 @@ class View:
         self._tick(x1, yl)
         label = text if text is not None else mm(abs(u1 - u0))
         small = abs(x1 - x0) < len(label) * size * 0.62
-        tx = (x0 + x1) / 2 if not small else x1 + 2 + len(label) * size * 0.3
-        self.s.text(tx, yl + 0.7, label, size=size, ha="center", va="bottom", bg="white" if small else None)
+        ty = yl + 0.7 if not small else yl - 0.9      # a label that doesn't fit goes under the line
+        self.s.text((x0 + x1) / 2, ty, label, size=size, ha="center", va="bottom" if not small else "top",
+                    bg="white" if small else None)
 
     def dim_v(self, v0, v1, u, off, text=None, size=2.2, ext=True):
+        size *= self.ts
         (x0, y0), (_, y1) = self.p(u, v0), self.p(u, v1)
         xl = x0 + off
         if ext:
@@ -259,8 +263,8 @@ class View:
         self._tick(xl, y1)
         label = text if text is not None else mm(abs(v1 - v0))
         small = abs(y1 - y0) < len(label) * size * 0.62
-        ty = (y0 + y1) / 2 if not small else max(y0, y1) + 2 + len(label) * size * 0.3
-        self.s.text(xl - 0.7, ty, label, size=size, ha="center", va="bottom", rot=90,
+        tx = xl - 0.7 if not small else xl + 0.9      # a label that doesn't fit goes beside the line
+        self.s.text(tx, (y0 + y1) / 2, label, size=size, ha="center", va="bottom" if not small else "top", rot=90,
                     bg="white" if small else None)
 
     def chain_h(self, us, v, off, **kw):
@@ -295,6 +299,7 @@ class View:
 
     def leader_to(self, u, v, text, x, y, size=2.0):
         """Leader from a part to a label at absolute paper position (x, y); text grows away from the part."""
+        size *= self.ts
         px, py = self.p(u, v)
         self.s.circle(px, py, 0.45, fill="#1a1a1a", lw=0, z=8)
         right = x >= px

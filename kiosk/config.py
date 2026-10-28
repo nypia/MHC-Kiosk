@@ -43,10 +43,10 @@ DECK_T = 0.064            # deck build-up: 6 mm white board + 40x40 steel grid +
 AC_INDOOR = (0.90, 0.45, 0.20)  # slim ducted indoor unit envelope (W x D x H)
 
 # Openings (relative to BASE_Z). Front face is y = -B, x measured along it.
-WIN_X = (-1.20, 2.00)     # front glazing bay
+WIN_X = (-1.80, 1.80)     # front glazing, centred: 250 mm from each corner tangent
 WIN_SILL = 1.08          # flush with the 0.90 m worktop (+ floor)
-WIN_HEAD = 2.20
-SCREEN_X = (-0.25, 1.05)  # middle bay: 55" menu screen behind the glass
+WIN_HEAD = 2.25          # 1170 mm glass; eye level (~1600 above the pad) sits mid-glass
+SCREEN_X = (-0.65, 0.65)  # middle bay: 55" menu screen behind the glass
 DOOR_Y = (-0.45, 0.45)    # door on +X side
 DOOR_HEAD = 2.20          # clear door height 2.04 m above the finished floor
 
