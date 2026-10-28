@@ -173,7 +173,8 @@ def build_fascia(M, roof):
 
     # Rooftop condenser, parented to the roof so it leaves with it.
     # The roof's origin is the world origin, so local == world here.
-    ac = U.box("klima dış ünite", (0.82, 0.30, 0.56), (1.45, 0.95, Z(C.ROOF_Z) + 0.03 + 0.28), col,
+    ao = L.AC_OUTDOOR
+    ac = U.box("klima dış ünite", (ao["w"], ao["d"], ao["h"]), (ao["x"], ao["y"], Z(C.ROOF_Z) + ao["feet"] + ao["h"] / 2), col,
                [M["white-appliance"]], bevel=0.01)
     U.parent(ac, roof)
     fan = U.cylinder("klima fan ızgarası", 0.2, 0.01, (-0.12, -0.151, 0.0), col, [M["black-plastic"]],
@@ -187,7 +188,7 @@ def build_fascia(M, roof):
 # ====================================================================== glazing
 def _logo(M, col, name, loc, rot):
     root = U.empty(name, col, loc, rot)
-    disk = U.cylinder(f"{name} disk", 0.38, 0.05, (0, 0, 0), col, [M["alucobond"]], verts=96,
+    disk = U.cylinder(f"{name} disk", L.LOGO_R, L.LOGO_T, (0, 0, 0), col, [M["alucobond"]], verts=96,
                       rot=(math.pi / 2, 0, 0), origin="center")
     U.parent(disk, root)
     up = (math.pi / 2, 0, 0)
@@ -204,7 +205,6 @@ def build_glazing(M):
     alu, black = [M["alucobond"]], [M["black-plastic"]]
     fy = -C.B                       # front outer face
     x0, x1 = C.WIN_X
-    sx0, sx1 = C.SCREEN_X
     sill, head = C.WIN_SILL, C.WIN_HEAD
     ny = Vector((0, -1, 0))
 
@@ -217,20 +217,13 @@ def build_glazing(M):
               U.box("pencere denizlik", (x1 - x0, ld + 0.03, 0.02), ((x0 + x1) / 2, ly - 0.015, Z(sill + 0.01)),
                     col, alu)]
     py = fy + 0.085
-    pw = 0.05
-    ix0, ix1, iz0, iz1 = x0 + 0.02, x1 - 0.02, sill + 0.02, head - 0.02
-    prof = [("sol", ix0 + pw / 2, (iz0 + iz1) / 2, pw, iz1 - iz0), ("sağ", ix1 - pw / 2, (iz0 + iz1) / 2, pw, iz1 - iz0),
-            ("üst", (ix0 + ix1) / 2, iz1 - pw / 2, ix1 - ix0, pw), ("alt", (ix0 + ix1) / 2, iz0 + pw / 2, ix1 - ix0, pw),
-            ("kayıt 1", sx0, (iz0 + iz1) / 2, pw, iz1 - iz0), ("kayıt 2", sx1, (iz0 + iz1) / 2, pw, iz1 - iz0),
-            ("sürgü kaydı", (sx1 + ix1) / 2, 1.72, ix1 - sx1, 0.04)]
+    prof, panes_l, (scr_x, scr_z, scr_w, scr_h) = L.window()
     for name, cx, cz, w, h in prof:
         frame.append(U.box(f"doğrama {name}", (w, 0.05, h), (cx, py, Z(cz)), col, black, bevel=0.002))
     for obj, st, en in U.stagger(frame, f0, f0 + 20, 8):
         U.arrive(obj, st, en, offset=ny * 0.5, interp="BACK")
 
     # Menu screen (55", landscape) hung just inside the middle bay.
-    scr_w, scr_h = 1.24, 0.72
-    scr_x, scr_z = (sx0 + sx1) / 2, (iz0 + iz1) / 2 + 0.02
     scr_y = fy + C.INNER + 0.035
     screen = U.rounded_box("menü ekranı gövde", (scr_w, 0.04, scr_h), 0.006, (scr_x, scr_y, Z(scr_z)), col, black)
     menu = Mt.emissive_image("menu screen", C.ROOT / "kiosk" / "art" / "menu.png")
@@ -248,14 +241,7 @@ def build_glazing(M):
         Mt.key_emission(menu, fr, v)
 
     # Glass panes; the lower right pane is the sliding pick-up hatch.
-    gy = py
-    gz0, gz1 = iz0 + pw, iz1 - pw
-    panes = [("sol", (ix0 + pw + sx0 - pw / 2) / 2, (gz0 + gz1) / 2, sx0 - pw / 2 - ix0 - pw, gz1 - gz0, gy),
-             ("orta", (sx0 + sx1) / 2, (gz0 + gz1) / 2, sx1 - sx0 - pw, gz1 - gz0, gy),
-             ("sağ üst", (sx1 + pw / 2 + ix1 - pw) / 2, (1.74 + gz1) / 2, ix1 - pw - sx1 - pw / 2, gz1 - 1.74, gy)]
-    hatch_h = 1.70 - gz0
-    panes.append(("servis kapağı", (sx1 + pw / 2 + ix1 - pw) / 2, gz0 + hatch_h / 2, ix1 - pw - sx1 - pw / 2,
-                  hatch_h, gy + 0.03))
+    panes = [(name, cx, cz, w, h, py + inset) for name, cx, cz, w, h, inset in panes_l]
     glass = []
     for name, cx, cz, w, h, y in panes:
         glass.append(U.box(f"cam {name}", (w + 0.02, 0.008, h + 0.02), (cx, y, Z(cz)), col, [M["glass"]]))
@@ -275,11 +261,12 @@ def build_glazing(M):
 
     # Outside bar shelves under the order and pick-up windows.
     shelves = []
-    for name, a, b in (("sipariş", x0 + 0.05, sx0 - 0.05), ("teslim", sx1 + 0.05, x1 - 0.05)):
+    for name, a, b in L.bar_shelves():
         w = b - a
         cx = (a + b) / 2
         top = sill
-        sh = U.box(f"bar rafı {name}", (w, 0.30, 0.04), (cx, fy - 0.15, Z(top - 0.02)), col, [M["oak"]], bevel=0.003)
+        sh = U.box(f"bar rafı {name}", (w, L.BAR_SHELF["depth"], L.BAR_SHELF["t"]), (cx, fy - 0.15, Z(top - 0.02)),
+                   col, [M["oak"]], bevel=0.003)
         parts = [sh]
         for k, bx in enumerate((a + 0.12, b - 0.12)):
             arm = U.box(f"konsol {name} {k}", (0.012, 0.24, 0.025), (bx, fy - 0.13, Z(top - 0.0525)), col, black)
@@ -318,15 +305,16 @@ def build_glazing(M):
 
     # Signage: logo disks + "KAHVE · TOST · ÇAY" board, installed as the fascia closes.
     fs0, fs1 = C.phase("fascia")
-    zc = Z(2.64)
-    logos = [_logo(M, col, "logo ön", (-1.45, fy - 0.018 - 0.055, zc), (0, 0, 0)),
-             _logo(M, col, "logo yan", (-C.A - 0.018 - 0.055, 0.0, zc), (0, 0, -math.pi / 2))]
-    board = U.empty("tabela", col, (0.80, fy - 0.018 - 0.03, Z(2.70)))
-    U.parent(U.box("tabela pano", (1.34, 0.03, 0.25), (0, 0, 0), col, alu, bevel=0.004), board)
+    zc = Z(L.LOGO_Z)
+    logos = [_logo(M, col, "logo ön", (L.LOGOS["front"], fy - 0.018 - 0.055, zc), (0, 0, 0)),
+             _logo(M, col, "logo yan", (-C.A - 0.018 - 0.055, L.LOGOS["left"], zc), (0, 0, -math.pi / 2))]
+    sg = L.SIGN
+    board = U.empty("tabela", col, (sg["x"], fy - 0.018 - 0.03, Z(sg["z"])))
+    U.parent(U.box("tabela pano", (sg["w"], sg["t"], sg["h"]), (0, 0, 0), col, alu, bevel=0.004), board)
     for k, (bx, bz, bw, bh) in enumerate(((0, 0.107, 1.27, 0.006), (0, -0.107, 1.27, 0.006),
                                           (-0.632, 0, 0.006, 0.22), (0.632, 0, 0.006, 0.22))):
         U.parent(U.box(f"tabela çerçeve {k}", (bw, 0.004, bh), (bx, -0.016, bz), col, [M["cream"]]), board)
-    U.parent(U.text("tabela yazı", "KAHVE · TOST · ÇAY", "Fraunces-SemiBold.ttf", 0.115, col, M["cream"],
+    U.parent(U.text("tabela yazı", sg["text"], "Fraunces-SemiBold.ttf", 0.115, col, M["cream"],
                     loc=(0, -0.016, 0.0), rot=(math.pi / 2, 0, 0), extrude=0.002, spacing=1.08), board)
     for root, st in ((logos[0], fs1 - 14), (board, fs1 - 8), (logos[1], fs1 - 4)):
         n = Vector((0, -1, 0)) if root is not logos[1] else Vector((-1, 0, 0))

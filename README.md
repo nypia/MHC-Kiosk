@@ -38,12 +38,44 @@ blender -b kiosk.blend -P render.py -- --final --stills   # 3840×2160 C01–C04
 
 `kiosk.blend` Blender'da doğrudan açılabilir. Ancak doku yolları `assets/` klasörüne göreli olduğundan önce `fetch_assets.py` çalıştırılmalıdır.
 
+## Üretim paftaları (usta için)
+
+`docs/uretim/MHC_Kiosk_Uretim_Paftalari.pdf`: A3, 12 pafta. PNG önizlemeler `docs/uretim/png/` klasöründe.
+
+| No | Pafta |
+|---|---|
+| 00 | Kapak, genel notlar, malzeme ve ana ölçüler |
+| 01 | Plan ve 4 görünüş (1:40) |
+| 02 | Kesit A-A, duvar ve saçak detayları |
+| 03 | Montaj sırası (8 adım, 3D görselli) |
+| 04 | Çelik şasi planı, çerçeve görünüşleri, kesim listesi |
+| 05 | Yuvarlak köşe detayı: köşe modülü KM, R değerleri |
+| 06 | Sandviç panel ve köşe modülü açınımı + panel listesi |
+| 07 | Çıta ve karkas açınımı, çıta kesim listesi, vida adedi |
+| 08 | Alucobond kaset açınımı (K01–K16), açınım ölçüleri, diğer kaplamalar |
+| 09 | Pencere, servis kapağı, ekran yeri, kapı |
+| 10 | Teknik asma kat (+2500) ve gizli kanallı klima yerleşimi |
+| 11 | Çatı planı, logo ve tabela alanları, toplam metraj |
+
+Bütün ölçüler 3D modelle aynı kaynaktan (`kiosk/config.py` + `kiosk/layout.py`) hesaplanır. Ölçü değişince paftaları yeniden üretmek için:
+
+```bash
+pip install matplotlib
+python make_drawings.py            # tüm set → docs/uretim/
+python render_steps.py             # (bpy) 03 numaralı paftadaki montaj görsellerini yeniler
+```
+
+Logo ve tabela grafikleri kesin değildir; paftalarda yalnızca montaj alanları vardır.
+
 ## Kod yapısı
 
 ```
 kiosk/config.py      ölçüler, palet (MHC Kahve tasarım sistemi token'ları), zaman çizelgesi
-kiosk/util.py        yuvarlatılmış dikdörtgen çevre geometrisi (s = çevre boyunca yay uzunluğu,
-                     d = dış yüzden içe derinlik), mesh üreticileri, keyframe yardımcıları
+kiosk/outline.py     yuvarlatılmış dikdörtgen çevre geometrisi (s = çevre boyunca yay uzunluğu,
+                     d = dış yüzden içe derinlik), Blender'sız
+kiosk/layout.py      parça yerleşimi ve numaraları (D, P, KM, K, Ç), pencere, asma kat; Blender'sız
+kiosk/util.py        Blender mesh üreticileri, keyframe yardımcıları
+kiosk/drawings/      A3 üretim paftaları (matplotlib)
 kiosk/materials.py   PBR malzemeler (Poly Haven dokuları, ölçülmüş renk kalibrasyonu)
 kiosk/site.py        meydan, beton platform, HDRI + güneş, teras
 kiosk/shell.py       şasi, paneller, boşluklar, çıtalar, Alucobond, cam, ekran, kapı, tabela

@@ -200,3 +200,83 @@ def cassettes():
         s0, s1 = LOOP_START + cuts[k] + j, LOOP_START + cuts[k + 1] - j
         out.append((f"K{k + 1:02d}", s0, s1, is_curved(s0, s1)))
     return out
+
+
+def length_at(s0, s1, d):
+    """Real length of the outline range s0..s1 at depth d (arcs shrink by (R-d)/R)."""
+    total = 0.0
+    a0 = loop_pos(s0)
+    a1 = a0 + (s1 - s0)
+    arc = 0.0
+    for a, b in ARCS:
+        p = loop_pos(a)
+        q = p + (b - a)
+        arc += max(0.0, min(a1, q) - max(a0, p))
+    total = (s1 - s0) - arc + arc * (O.R - d) / O.R
+    return total
+
+
+# ------------------------------------------------------------------ window, signage, roof unit
+WIN_PROFILE = 0.05      # aluminium frame face width
+WIN_LINER = 0.02        # Alucobond reveal liner thickness
+HATCH_TOP = 1.70        # top of the vertical-sliding pick-up hatch
+SCREEN = (1.24, 0.72)   # 55" menu screen (W x H)
+
+
+def window():
+    """Window frame profiles and glass panes in front-face coordinates (x, z rel. BASE_Z).
+
+    profiles: (name, cx, cz, w, h)    panes: (name, cx, cz, w, h, inset)  -- visible glass sizes;
+    the glazing is cut 20 mm larger (10 mm bite each side).
+    """
+    x0, x1 = C.WIN_X
+    sx0, sx1 = C.SCREEN_X
+    pw = WIN_PROFILE
+    ix0, ix1, iz0, iz1 = x0 + WIN_LINER, x1 - WIN_LINER, C.WIN_SILL + WIN_LINER, C.WIN_HEAD - WIN_LINER
+    profiles = [("sol", ix0 + pw / 2, (iz0 + iz1) / 2, pw, iz1 - iz0),
+                ("sağ", ix1 - pw / 2, (iz0 + iz1) / 2, pw, iz1 - iz0),
+                ("üst", (ix0 + ix1) / 2, iz1 - pw / 2, ix1 - ix0, pw),
+                ("alt", (ix0 + ix1) / 2, iz0 + pw / 2, ix1 - ix0, pw),
+                ("kayıt 1", sx0, (iz0 + iz1) / 2, pw, iz1 - iz0),
+                ("kayıt 2", sx1, (iz0 + iz1) / 2, pw, iz1 - iz0),
+                ("sürgü kaydı", (sx1 + ix1) / 2, HATCH_TOP + 0.02, ix1 - sx1, 0.04)]
+    gz0, gz1 = iz0 + pw, iz1 - pw
+    rx = (sx1 + pw / 2 + ix1 - pw) / 2
+    rw = ix1 - pw - sx1 - pw / 2
+    panes = [("sipariş (sol)", (ix0 + pw + sx0 - pw / 2) / 2, (gz0 + gz1) / 2, sx0 - pw / 2 - ix0 - pw, gz1 - gz0, 0.0),
+             ("ekran (orta)", (sx0 + sx1) / 2, (gz0 + gz1) / 2, sx1 - sx0 - pw, gz1 - gz0, 0.0),
+             ("teslim üst", rx, (HATCH_TOP + 0.04 + gz1) / 2, rw, gz1 - HATCH_TOP - 0.04, 0.0),
+             ("servis kapağı", rx, gz0 + (HATCH_TOP - gz0) / 2, rw, HATCH_TOP - gz0, 0.03)]
+    screen = ((sx0 + sx1) / 2, (iz0 + iz1) / 2 + 0.02, *SCREEN)
+    return profiles, panes, screen
+
+
+LOGO_R = 0.38
+LOGO_T = 0.05
+LOGO_Z = 2.64
+LOGOS = {"front": -1.45, "left": 0.0}     # face -> position along it (x on front, y on left)
+SIGN = dict(x=0.80, z=2.70, w=1.34, h=0.25, t=0.03, text="KAHVE · TOST · ÇAY")
+BAR_SHELF = dict(depth=0.30, t=0.04)      # two outside shelves under the order / pick-up bays
+CANOPY = dict(depth=0.16, t=0.03, overhang=0.04)
+AC_OUTDOOR = dict(x=1.45, y=0.95, w=0.82, d=0.30, h=0.56, feet=0.03)
+
+
+def bar_shelves():
+    x0, x1 = C.WIN_X
+    sx0, sx1 = C.SCREEN_X
+    return [("sipariş", x0 + 0.05, sx0 - 0.05), ("teslim", sx1 + 0.05, x1 - 0.05)]
+
+
+# ------------------------------------------------------------------ service deck (teknik asma kat)
+DECK = dict(
+    inset=0.17,                      # deck edge = inside face of the posts
+    board=0.006, grid=0.040, ply=0.018,
+    carriers_x=JOIST_X, hangers_y=(-0.7, 0.7),
+    unit=(0.30, 0.35),               # ducted indoor unit centre (x, y)
+    supply=(0.40, -1.15, 1.40, 0.07),  # linear slot over the window: x, y, w, d
+    ret=(0.30, 0.75, 0.60, 0.30),      # return grille
+    hatch=(-1.55, 0.05, 0.60),         # access hatch centre + size
+    panel=(-1.50, 0.95, 0.40, 0.14, 0.24),  # electrical panel x, y, w, d, h
+    lines=(1.30, 0.90),                # refrigerant lines rise to the roof unit
+)
+PURLINS_Y = (-0.7, 0.0, 0.7)

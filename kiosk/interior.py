@@ -8,6 +8,7 @@ import math
 import bpy
 
 from . import config as C
+from . import layout as L
 from . import materials as Mt
 from . import util as U
 
@@ -294,6 +295,7 @@ def service_deck(M, coll):
     return grille, condensate and refrigerant lines, electrical panel.
     Everything is parented to one root so it installs as a unit.
     """
+    coll = U.collection("06b Teknik asma kat")
     root = _group("teknik asma kat", coll)
     board_top = CEIL + 0.006
     grid_top = board_top + 0.040
@@ -305,36 +307,37 @@ def service_deck(M, coll):
     _add(root,
          U.slab("asma tavan beyaz panel", 0.17, CEIL, board_top, white, coll),
          U.slab("asma kat kontrplak", 0.17, grid_top, deck_top, [plywood], coll))
-    for k, x in enumerate((-2.0, -1.0, 0.0, 1.0, 2.0)):
+    D = L.DECK
+    for k, x in enumerate(D["carriers_x"]):
         _add(root, U.box(f"asma kat taşıyıcı {k}", (0.04, 2 * (C.B - 0.17), 0.04), (x, 0, board_top + 0.02), coll,
                          [galv]))
-        for y in (-0.7, 0.7):
+        for y in D["hangers_y"]:
             rod = Z(C.RING_Z[0]) - deck_top
             _add(root, U.cylinder(f"asma kat askı {k} {y:+.1f}", 0.005, rod, (x, y, deck_top), coll, [galv], verts=8))
 
     # Underside: access hatch, supply slot over the window, return grille.
     black = [M["black-plastic"]]
-    hx, hy = -1.55, 0.05
+    hx, hy, _ = D["hatch"]
     for k, (dx, dy, w, d) in enumerate(((0, 0.3, 0.62, 0.01), (0, -0.3, 0.62, 0.01), (0.3, 0, 0.01, 0.62),
                                         (-0.3, 0, 0.01, 0.62))):
         _add(root, U.box(f"bakım kapağı çerçeve {k}", (w, d, 0.004), (hx + dx, hy + dy, CEIL - 0.002), coll, black))
     _add(root,
-         U.box("üfleme menfezi", (1.40, 0.07, 0.006), (0.40, -1.15, CEIL - 0.003), coll, black),
-         U.box("emiş menfezi", (0.60, 0.30, 0.006), (0.30, 0.75, CEIL - 0.003), coll, black))
+         U.box("üfleme menfezi", (D["supply"][2], D["supply"][3], 0.006), (*D["supply"][:2], CEIL - 0.003), coll, black),
+         U.box("emiş menfezi", (D["ret"][2], D["ret"][3], 0.006), (*D["ret"][:2], CEIL - 0.003), coll, black))
     for k in range(7):
         _add(root, U.box(f"emiş menfezi lamel {k}", (0.58, 0.004, 0.008), (0.30, 0.62 + k * 0.042, CEIL - 0.007),
                          coll, [M["steel"]]))
 
     # Equipment on the deck.
     aw, ad, ah = C.AC_INDOOR
-    ux, uy = 0.30, 0.35
+    ux, uy = D["unit"]
     _add(root,
          U.rounded_box("klima iç ünite (kanallı)", (aw, ad, ah), 0.01, (ux, uy, deck_top + ah / 2), coll,
                        [M["white-appliance"]]),
          U.box("üfleme kanalı", (0.70, 1.20, 0.15), (ux + 0.05, uy - ad / 2 - 0.60, deck_top + 0.085), coll, [galv]),
          U.box("üfleme kanalı ağız", (1.40, 0.12, 0.06), (0.40, -1.15, deck_top + 0.03), coll, [galv]),
          U.box("emiş plenumu", (0.62, 0.32, 0.12), (0.30, 0.75, deck_top + 0.06), coll, [galv]),
-         U.box("elektrik panosu", (0.40, 0.14, 0.24), (-1.50, 0.95, deck_top + 0.12), coll, [M["cabinet"]],
+         U.box("elektrik panosu", D["panel"][2:], (*D["panel"][:2], deck_top + D["panel"][4] / 2), coll, [M["cabinet"]],
                bevel=0.004),
          U.box("LED sürücü kutusu", (0.25, 0.10, 0.05), (-1.00, 1.05, deck_top + 0.025), coll, black),
          U.box("ekran oynatıcı", (0.15, 0.12, 0.04), (0.40, -0.80, deck_top + 0.02), coll, black))
@@ -343,7 +346,8 @@ def service_deck(M, coll):
          U.cylinder("yoğuşma hattı", 0.012, 0.85, (pipe_x, uy + ad / 2, deck_top + 0.03), coll, white, verts=12,
                     rot=(-1.5708, 0, 0), origin="bottom"))
     for k, dx in enumerate((0.0, 0.04)):
-        _add(root, U.cylinder(f"bakır hat {k}", 0.008, Z(C.ROOF_Z) - deck_top - 0.12, (1.30 + dx, 0.90, deck_top + 0.12),
+        _add(root, U.cylinder(f"bakır hat {k}", 0.008, Z(C.ROOF_Z) - deck_top - 0.12,
+                              (D["lines"][0] + dx, D["lines"][1], deck_top + 0.12),
                               coll, [copper], verts=12))
 
     # Lights under the deck.

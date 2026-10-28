@@ -11,6 +11,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import bpy  # noqa: E402
 
 from kiosk import config as C  # noqa: E402
+from kiosk import layout as L  # noqa: E402
 from kiosk import cameras, interior, materials, shell, site, finale  # noqa: E402
 
 
@@ -49,8 +50,16 @@ def check(sc):
     top = max(v.z for v in xs) - C.BASE_Z
     assert abs(ext[0] - (C.LENGTH + 0.036)) < 0.01 and abs(ext[1] - (C.WIDTH + 0.036)) < 0.01, ext
     assert abs(top - C.HEIGHT) < 0.01, top
+    clear = C.CEILING_Z - C.FLOOR_H
+    door = C.DOOR_HEAD - C.FLOOR_H
+    plenum = C.RING_Z[0] - (C.CEILING_Z + C.DECK_T)
+    assert clear >= 2.30 and door >= 2.00 and plenum >= C.AC_INDOOR[2] + 0.05, (clear, door, plenum)
+    panels = L.panels()
+    covered = sum(p["s1"] - p["s0"] + 2 * L.PANEL_GAP for p in panels)
+    assert abs(covered - L.O.TOTAL) < 1e-6, covered
     print(f"envelope {ext[0]:.3f} x {ext[1]:.3f} x {top:.3f} m (fascia proud 18 mm), "
-          f"{len(sc.objects)} objects")
+          f"clear height {clear:.2f}, door {door:.2f}, plenum {plenum:.3f}, "
+          f"{len(panels)} wall modules, {len(sc.objects)} objects")
 
 
 def main():
