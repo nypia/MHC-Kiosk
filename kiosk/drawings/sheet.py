@@ -38,7 +38,7 @@ FILL = {  # section / elevation fills
     "cut": ("#ffffff", "\\\\\\\\"),
 }
 
-PROJECT = "MHC Kahve Kiosku"
+PROJECT = "MHC Mola · Kiosk"
 SUBTITLE = f"{C.LENGTH:.1f} × {C.WIDTH:.1f} × {C.HEIGHT:.1f} m · prefabrik kahve kioskusu"
 
 

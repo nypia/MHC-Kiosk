@@ -208,9 +208,10 @@ def g3(sh):
     ], size=2.9)
     bx, by = L.blade_centre()
     B = L.BLADE
-    y = _list(sh, 150, y - 4, "LOGO VE DAİRE TABELA (krem, arkadan LED)", [
-        "• Ön siyah bantın ortasına kanal harf: \"MHC\" 280 mm, altında \"KAHVE\" 75 mm.",
-        "• Sol yan bantta tek satır \"MHC KAHVE\" 110 mm.",
+    y = _list(sh, 150, y - 4, "LOGO VE DAİRE TABELA (MHC Mola, arkadan LED)", [
+        f"• Ön siyah bantın ortasına MHC Mola logosu, kanal harf: {mm(L.LOGO['front'][2] * L.LOGO_ASPECT)} geniş, "
+        f"{mm(L.LOGO['front'][2])} yüksek.",
+        f"• Sol yan bantta aynı logo, {mm(L.LOGO['left'][2] * L.LOGO_ASPECT)} × {mm(L.LOGO['left'][2])}.",
         f"• Sol yanda dışarı çıkan daire tabela: Ø{mm(2 * B['r'])}, {mm(B['t'])} kalın, iki yüzü yazılı.",
         f"   Duvardan {mm(B['gap'])} mm dışarıda, ön köşeye {mm(by + C.B)} mm, ortası +{mm(B['z'])}.",
     ], size=2.9)

@@ -74,7 +74,7 @@ def z(h):
 
 
 # ---------------------------------------------------------------- palette
-# Mirrors the "MHC Kahve" design system tokens (sRGB hex).
+# Mirrors the MHC Mola design system tokens (sRGB hex).
 PALETTE = {
     "alucobond-black": "#1f1d1c",
     "walnut": "#8a5a3a",

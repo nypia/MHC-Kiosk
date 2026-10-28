@@ -9,6 +9,7 @@ from mathutils import Matrix, Vector
 
 from . import config as C
 from . import layout as L
+from . import logo3d
 from . import materials as Mt
 from . import util as U
 
@@ -186,15 +187,6 @@ def build_fascia(M, roof):
 
 
 # ====================================================================== glazing
-def _letters(col, mat, name, lines, rot):
-    """Channel letters as extruded text, one object per line, parented to an empty."""
-    root = U.empty(name, col, rot=rot)
-    for k, (text, font, cap, zc, track) in enumerate(lines):
-        U.parent(U.text(f"{name} {k}", text, font, cap / L.CAP, col, mat, loc=(0, 0, Z(zc)),
-                        rot=(math.pi / 2, 0, 0), extrude=L.LETTER_DEPTH / 2, spacing=track), root)
-    return root
-
-
 def _blade_sign(M, col):
     """Double-sided round blade sign with a glowing edge, on two arms off the left wall."""
     bx, by = L.blade_centre()
@@ -205,11 +197,10 @@ def _blade_sign(M, col):
                         rot=up, origin="center"), root)
     U.parent(U.cylinder("daire tabela ışıklı kenar", B["r"] + 0.002, B["t"] - 0.01, (0, 0, 0), col, [M["cream"]],
                         verts=96, rot=up, origin="center", caps=False), root)
+    mats = {"fg": M["cream"], "accent": M["logo-accent"]}
     for side, rz in ((-1, 0.0), (1, math.pi)):
-        for k, (text, font, cap, zc, track) in enumerate(B["lines"]):
-            U.parent(U.text(f"daire tabela {k} {side}", text, font, cap / L.CAP, col, M["cream"],
-                            loc=(0, side * (B["t"] / 2 + 0.001), zc), rot=(math.pi / 2, 0, rz), extrude=0.002,
-                            spacing=track), root)
+        U.parent(logo3d.logo(f"daire tabela rozet {side}", "badge", 2 * B["r"], 0.004, mats, col,
+                             loc=(0, side * (B["t"] / 2 + 0.002), 0), rot=(math.pi / 2, 0, rz)), root)
     arm_len = B["gap"] + 0.02
     for k, dz in enumerate(B["arms"]):
         U.parent(U.box(f"daire tabela konsol {k}", (arm_len, 0.012, 0.03), (B["r"] + arm_len / 2 - 0.01, 0, dz),
@@ -324,12 +315,13 @@ def build_glazing(M):
     # Signage: channel letters on the fascia + round blade sign, installed as the fascia closes.
     fs0, fs1 = C.phase("fascia")
     proud = L.FASCIA_D[0] - L.LETTER_GAP - L.LETTER_DEPTH / 2
-    x_front, front_lines = L.LETTERS["front"]
-    y_left, left_lines = L.LETTERS["left"]
-    front = _letters(col, M["cream"], "logo harf ön", front_lines, (0, 0, 0))
-    front.location = (x_front, -C.B + proud, 0)
-    left = _letters(col, M["cream"], "logo harf sol", left_lines, (0, 0, -math.pi / 2))
-    left.location = (-C.A + proud, y_left, 0)
+    mats = {"fg": M["cream"], "accent": M["logo-accent"]}
+    x_front, z_front, h_front = L.LOGO["front"]
+    front = logo3d.logo("logo ön", "wordmark", h_front, L.LETTER_DEPTH, mats, col,
+                        loc=(x_front, -C.B + proud, Z(z_front)))
+    y_left, z_left, h_left = L.LOGO["left"]
+    left = logo3d.logo("logo sol", "wordmark", h_left, L.LETTER_DEPTH, mats, col,
+                       loc=(-C.A + proud, y_left, Z(z_left)), rot=(math.pi / 2, 0, -math.pi / 2))
     blade = _blade_sign(M, col)
     for root, st, n, spin in ((front, fs1 - 14, Vector((0, -1, 0)), None),
                               (left, fs1 - 8, Vector((-1, 0, 0)), None),
@@ -337,7 +329,8 @@ def build_glazing(M):
         U.arrive(root, st, st + 16, offset=n * 0.6 + Vector((0, 0, 0.3)), rot_offset=spin, interp="BACK",
                  visible=False)
         U.show_tree(root, st)
-    for fr, v in ((0, 0.0), (on + 10, 0.0), (on + 16, 0.6)):
-        Mt.key_emission(M["cream"], fr, v)
+    for mat in (M["cream"], M["logo-accent"]):
+        for fr, v in ((0, 0.0), (on + 10, 0.0), (on + 16, 0.6)):
+            Mt.key_emission(mat, fr, v)
 
     return {"hatch": hatch, "screen": screen}

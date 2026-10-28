@@ -23,8 +23,8 @@ OUT = C.ROOT / "docs" / "uretim"
 
 
 SETS = [  # (pdf name, title, sheets, png prefix)
-    ("MHC_Kiosk_Usta_Paftalari.pdf", "MHC Kahve Kiosku - Usta Paftaları (3 sayfa)", SIMPLE, "usta_"),
-    ("MHC_Kiosk_Uretim_Paftalari.pdf", "MHC Kahve Kiosku - Detaylı Üretim Paftaları", SHEETS, ""),
+    ("MHC_Kiosk_Usta_Paftalari.pdf", "MHC Mola Kiosk - Usta Paftaları (3 sayfa)", SIMPLE, "usta_"),
+    ("MHC_Kiosk_Uretim_Paftalari.pdf", "MHC Mola Kiosk - Detaylı Üretim Paftaları", SHEETS, ""),
 ]
 
 

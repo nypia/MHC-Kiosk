@@ -245,6 +245,7 @@ def library():
                            rough_var=0.04, bump=0.0, coat=0.25),
         "alucobond-edge": principled("alucobond joint", (0.01, 0.01, 0.01, 1), rough=0.6),
         "cream": principled("sign cream", "cream", rough=0.35, emission="cream"),
+        "logo-accent": principled("logo walnut", "oak-counter", rough=0.35, emission="oak-counter"),
         "led": principled("led strip", (0.9, 0.9, 0.9, 1), rough=0.3, emission="led-warm"),
         "glass": glass(),
         "frosted": glass("frosted glass", rough=0.25),

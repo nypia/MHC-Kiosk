@@ -37,8 +37,9 @@ def animate(M, roof, hatch, world_bg, sun, lights):
     for mat, strength in zip(lights["emit"], (30.0, 6.0, 8.0)):
         Mt.key_emission(mat, on0, 0.0)
         Mt.key_emission(mat, on1, strength)
-    Mt.key_emission(M["cream"], on0, 0.6)
-    Mt.key_emission(M["cream"], on1, 2.0)
+    for mat in (M["cream"], M["logo-accent"]):
+        Mt.key_emission(mat, on0, 0.6)
+        Mt.key_emission(mat, on1, 2.0)
     Mt.key_emission(M["led"], on0, 18.0)
     Mt.key_emission(M["led"], on1, 30.0)
 

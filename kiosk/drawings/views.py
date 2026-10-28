@@ -1,11 +1,31 @@
 """Reusable drawn views: plan, elevations, cross-section, developed walls."""
+import json
 import math
+
+from matplotlib.patches import PathPatch
+from matplotlib.path import Path
 
 from .. import config as C
 from .. import layout as L
 from .. import outline as O
 from . import geo as G
 from .sheet import mm
+
+_LOGO = json.loads((C.ROOT / "kiosk" / "art" / "logo" / "logo_geometry.json").read_text())
+LOGO_FG, LOGO_ACCENT = "#efe2c4", "#c08a5c"
+
+
+def logo(v, which, cu, cz, size, fg=LOGO_FG, accent=LOGO_ACCENT, z=5):
+    """Draw the MHC Mola logo from its outline geometry, centred at (cu, cz), `size` metres high/wide."""
+    for part in _LOGO[which]["parts"]:
+        verts, codes = [], []
+        for shape in part["shapes"]:
+            for ring in [shape["outer"]] + shape["holes"]:
+                verts += [v.p(cu + x * size, cz + y * size) for x, y in ring]
+                codes += [Path.MOVETO] + [Path.LINETO] * (len(ring) - 2) + [Path.CLOSEPOLY]
+        if verts:
+            v.s.ax.add_patch(PathPatch(Path(verts, codes), facecolor=accent if part["key"] == "accent" else fg,
+                                       edgecolor="none", lw=0, zorder=z))
 
 FZ0, FZ1 = C.FASCIA_Z
 
@@ -101,13 +121,11 @@ def elevation(v, face, dims=True, detail=True):
             v.rect(u0 + 0.025, z0 + 0.02, u1 - 0.025, z1 - 0.02, fill="alu", lw="thin")
             hu = u1 - 0.14 if face == "right" else u0 + 0.14
             v.line([(hu, 0.85), (hu, 1.30)], lw="thick", color="#c9cdd0")
-    # channel letters on the fascia + the round blade sign
-    if face in L.LETTERS:
-        pos, lines = L.LETTERS[face]
+    # channel-letter logo on the fascia + the round blade sign
+    if face in L.LOGO:
+        pos, zc, h = L.LOGO[face]
         u = G.project(face, pos, 0) if face in ("front", "back") else G.project(face, 0, pos)
-        for text, font, cap, zc, track in lines:
-            v.text(u, zc, text, size=cap / L.CAP * v.k, ha="center", va="center", color="#efe2c4", z=5,
-                   serif=font == L.SERIF)
+        logo(v, "wordmark", u, zc, h)
     blade(v, face)
     # rooftop condenser above the parapet
     ao = L.AC_OUTDOOR
@@ -140,9 +158,7 @@ def blade(v, face):
     if face in ("front", "back"):
         u = G.project(face, bx, by)
         v.circle(u, B["z"], B["r"], fill="#1f1d1c", lw="thin", z=4.3)
-        for text, font, cap, dz, track in B["lines"]:
-            v.text(u, B["z"] + dz, text, size=cap / L.CAP * v.k, ha="center", va="center", color="#efe2c4",
-                   z=5, serif=font == L.SERIF)
+        logo(v, "badge", u, B["z"], 2 * B["r"])
         wall = G.project(face, -C.A + L.FASCIA_D[0], by)
         for dz in B["arms"]:
             v.rect(min(u, wall), B["z"] + dz - 0.015, max(u, wall), B["z"] + dz + 0.015, fill="#202020", lw=0, z=4.2)

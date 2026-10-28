@@ -37,14 +37,12 @@ def render(path):
     im = Image.new("RGB", (W, H), ink)
     d = ImageDraw.Draw(im)
 
-    # Header: logo disk + wordmark + strapline
-    cx, cy, r = 150, 140, 92
-    d.ellipse((cx - r, cy - r, cx + r, cy + r), outline=cream, width=4)
-    d.text((cx, cy - 12), "MHC", font=serif(54), fill=cream, anchor="mm")
-    d.text((cx, cy + 46), "K A H V E", font=sans_m(20), fill=cream, anchor="mm")
-    d.text((290, 112), "MHC Kahve", font=serif(78), fill=cream, anchor="lm")
-    d.text((294, 182), "Taze çekilmiş kahve · Sıcak tost · Demlik çay", font=sans(32), fill=muted,
-           anchor="lm")
+    # Header: the MHC Mola logo (kiosk/art/logo/logo_seffaf.png, from brand.py) + a short line
+    logo = Image.open(C.ROOT / "kiosk" / "art" / "logo" / "logo_seffaf.png").convert("RGBA")
+    lh = 190
+    logo = logo.resize((round(logo.width * lh / logo.height), lh), Image.LANCZOS)
+    im.paste(logo, (80, 50), logo)
+    d.text((W - 80, 150), "Yola devam etmeden önce.", font=sans(34), fill=muted, anchor="rm")
     d.line((80, 268, W - 80, 268), fill=muted, width=2)
 
     col_w = (W - 160) // 3

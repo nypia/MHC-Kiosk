@@ -252,19 +252,15 @@ def window():
     return profiles, panes, screen
 
 
-# Signage, Barns-style: backlit channel letters straight on the fascia band, plus a
-# double-sided round blade sign sticking out of the upper left side.
-SERIF, SANS = "Fraunces-SemiBold.ttf", "Jost-Medium.ttf"
-CAP = 0.70            # cap height / font size for both faces
+# Signage, Barns-style: backlit channel-letter logo straight on the fascia band, plus a
+# double-sided round blade sign sticking out of the upper left side. The logo
+# (MHC over M-mark-LA) comes from kiosk/art/logo/logo_geometry.json.
 LETTER_DEPTH = 0.04   # channel letter return
 LETTER_GAP = 0.015    # stand-off from the cassette face
-# face -> (position along the face, [(text, font, cap height, z centre, tracking)])
-LETTERS = {
-    "front": (0.0, [("MHC", SERIF, 0.28, 2.77, 1.0), ("KAHVE", SANS, 0.075, 2.515, 1.9)]),
-    "left": (0.30, [("MHC KAHVE", SERIF, 0.11, 2.70, 1.05)]),
-}
-BLADE = dict(y=-0.70, z=2.62, r=0.36, t=0.06, gap=0.12, arms=(-0.16, 0.16),
-             lines=[("MHC", SERIF, 0.13, 0.035, 1.0), ("KAHVE", SANS, 0.035, -0.115, 1.9)])
+LOGO_ASPECT = 2.831   # wordmark width / height (brand.py)
+# face -> (position along the face, z centre, logo height)
+LOGO = {"front": (0.0, 2.70, 0.46), "left": (0.30, 2.70, 0.26)}
+BLADE = dict(y=-0.70, z=2.62, r=0.36, t=0.06, gap=0.12, arms=(-0.16, 0.16))
 
 
 def blade_centre():

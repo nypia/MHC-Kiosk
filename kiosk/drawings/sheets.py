@@ -22,8 +22,8 @@ GENERAL_NOTES = [
     "6. Panel ve kaset ölçüleri imalattan önce kurulmuş şasi üzerinde yerinde ölçülerek teyit edilir.",
     "7. Montaj sırası 03 numaralı paftadadır. Asma kat ve klima, çatı paneli kapanmadan yerleştirilir.",
     "8. Elektrik, su ve gider tesisatı bu setin kapsamı dışındadır; yalnızca geçiş yerleri gösterilmiştir.",
-    "9. Logo: ön bantta krem kanal harf MHC / KAHVE, sol yanda çift taraflı Ø720 daire çıkma tabela "
-    "(pafta 11).",
+    "9. Logo (MHC Mola): ön ve sol bantta krem kanal harf, sol yanda çift taraflı Ø720 daire çıkma "
+    "tabela (pafta 11).",
 ]
 
 MATERIALS = [
@@ -53,7 +53,7 @@ def s00(sh):
     img = ART / "cover.png"
     if img.exists():
         sh.image(img, 16, 120, 220)
-    sh.text(16, 274, "MHC Kahve Kiosku", size=9, weight="medium")
+    sh.text(16, 274, "MHC Mola · Kiosk", size=9, weight="medium")
     sh.text(16, 264, "Üretim paftaları: şasi · sandviç panel · köşe modülü · çıta · Alucobond · cam · asma kat",
             size=3.2, color=GREY)
     y = sh.note_box(248, 276, 150, "Genel notlar", [])
@@ -699,8 +699,10 @@ def s08(sh):
         ["Kapı sövesi yan ×2 + üst", f"{mm(reveal)} × {mm(door_h)} / {mm(door_w)}", ""],
         ["Kapı kanadı kaplaması ×2 yüz", f"{mm(door_w - 0.05)} × {mm(door_h - 0.04)}", "çelik kasa üzerine"],
         ["Pencere saçağı (LED'li)", f"{mm(win_w + 2 * L.CANOPY['overhang'])} × {mm(L.CANOPY['depth'])}", "alt yüzde LED kanalı"],
-        ["Kanal harf ön: MHC h280 + KAHVE h75", "krem yüz, 40 derinlik", "arkadan LED"],
-        ["Kanal harf sol yan: MHC KAHVE h110", "krem yüz, 40 derinlik", "arkadan LED"],
+        ["Kanal harf logo, ön", f"{mm(L.LOGO['front'][2] * L.LOGO_ASPECT)} × {mm(L.LOGO['front'][2])}",
+         "40 derinlik, arkadan LED"],
+        ["Kanal harf logo, sol yan", f"{mm(L.LOGO['left'][2] * L.LOGO_ASPECT)} × {mm(L.LOGO['left'][2])}",
+         "40 derinlik, arkadan LED"],
         ["Daire çıkma tabela, çift taraflı", f"Ø{mm(2 * L.BLADE['r'])} × {mm(L.BLADE['t'])}", "kenarı ışıklı"],
     ]
     sh.text(160, 216, "Diğer Alucobond parçaları", size=2.6, weight="medium")
@@ -910,21 +912,21 @@ def s11(sh):
     v.dim_h(-C.A, C.A, -C.B, -8)
     v.dim_v(-C.B, C.B, -C.A, -8)
     v.caption(-C.A, -C.B - 0.45, "ÇATI PLANI")
-    # channel letters (front) and blade sign, 1:10 / 1:20
+    # channel-letter logo (front) and blade sign, 1:20 / 1:10
     g = sh.view(130, 142 - 2.40 * 50, 20)
-    xf, lines = L.LETTERS["front"]
+    xf, zf, hf = L.LOGO["front"]
+    wf = hf * L.LOGO_ASPECT
     g.rect(-1.0, FZ0, 1.0, FZ1, fill="alu", lw="thin")
-    for text, font, cap, zc, track in lines:
-        g.text(0, zc, text, size=cap / L.CAP * g.k, ha="center", va="center", color="#efe2c4", serif=font == L.SERIF)
-        g.dim_v(zc - cap / 2, zc + cap / 2, 1.0, 6 if text == "MHC" else 14, text=mm(cap))
+    V.logo(g, "wordmark", 0, zf, hf)
+    g.dim_h(-wf / 2, wf / 2, FZ1, 6)
+    g.dim_v(zf - hf / 2, zf + hf / 2, 1.0, 6)
     g.chain_v([FZ0, FZ1], -1.0, -6)
     g.caption(-1.0, FZ0 - 0.12, "ÖN BANT LOGOSU · kanal harf, ortada", size=2.6)
     B = L.BLADE
     t = sh.view(60, 0, 10)
     t.oy = 52 + B["r"] * t.k
     t.circle(0, 0, B["r"], fill="#1f1d1c", lw="thin")
-    for text, font, cap, dz, track in B["lines"]:
-        t.text(0, dz, text, size=cap / L.CAP * t.k, ha="center", va="center", color="#efe2c4", serif=font == L.SERIF)
+    V.logo(t, "badge", 0, 0, 2 * B["r"])
     t.dim_h(-B["r"], B["r"], -B["r"], -5, text=f"Ø{mm(2 * B['r'])}")
     k = sh.view(130, t.oy, 10)
     k.rect(-B["t"] / 2, -B["r"], B["t"] / 2, B["r"], fill="#1f1d1c", lw="thin")
@@ -937,15 +939,16 @@ def s11(sh):
     k.text(B["t"] / 2 + B["gap"] + 0.07, 0, "sol duvar\n(saçak)", size=2.0, va="center")
     t.caption(-B["r"], -B["r"] - 0.12, "DAİRE ÇIKMA TABELA · önden ve yandan", size=2.6)
     bx, by = L.blade_centre()
+    hl = L.LOGO["left"][2]
     sh.paragraph(250, 180, [
-        "**Logo ve tabela",
-        "• Ön bant: krem kanal harf \"MHC\" (h280) ve \"KAHVE\" (h75), ortada,",
-        "   harf derinliği 40, kasetten 15 mm önde, arkadan LED.",
-        "• Sol yan bant: \"MHC KAHVE\" tek satır, h110.",
-        f"• Daire tabela: Ø{mm(2 * B['r'])}, kalınlık {mm(B['t'])}, çift taraflı, kenarı ışıklı;",
+        "**Logo (MHC Mola) ve tabela",
+        f"• Ön bant: kanal harf logo {mm(wf)} × {mm(hf)}, ortada, krem; \"O\" içindeki",
+        "   iki çubuk ceviz tonu. Harf derinliği 40, kasetten 15 mm önde, arkadan LED.",
+        f"• Sol yan bant: aynı logo {mm(hl * L.LOGO_ASPECT)} × {mm(hl)}.",
+        f"• Daire tabela: Ø{mm(2 * B['r'])}, kalınlık {mm(B['t'])}, çift taraflı rozet, kenarı ışıklı;",
         f"   sol duvardan {mm(B['gap'])} mm dışarıda, ön köşeye {mm(by + C.B)} mm, merkez +{mm(B['z'])}.",
         "• Konsol: 2 adet 30×12 siyah lama, saçak arkasındaki dikmeye cıvatalı.",
-        "• LED besleme için saçak arkasından Ø20 kablo geçişi.",
+        "• Logo dosyaları: kiosk/art/logo (SVG / PNG).",
     ], size=2.1)
 
     # bill of quantities
