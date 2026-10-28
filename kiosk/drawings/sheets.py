@@ -22,8 +22,8 @@ GENERAL_NOTES = [
     "6. Panel ve kaset ölçüleri imalattan önce kurulmuş şasi üzerinde yerinde ölçülerek teyit edilir.",
     "7. Montaj sırası 03 numaralı paftadadır. Asma kat ve klima, çatı paneli kapanmadan yerleştirilir.",
     "8. Elektrik, su ve gider tesisatı bu setin kapsamı dışındadır; yalnızca geçiş yerleri gösterilmiştir.",
-    "9. Logo ve tabela grafikleri kesin değildir; paftalarda yalnızca montaj alanları gösterilmiştir. "
-    "Görseller temsilidir.",
+    "9. Logo: ön bantta krem kanal harf MHC / KAHVE, sol yanda çift taraflı Ø720 daire çıkma tabela "
+    "(pafta 11).",
 ]
 
 MATERIALS = [
@@ -34,7 +34,7 @@ MATERIALS = [
     ("Karkas", "45×22 mm siyah alüminyum omega"),
     ("Alucobond", "4 mm kompozit, mat siyah (#1F1D1C), PVDF boya"),
     ("Doğrama", "siyah RAL 9005 alüminyum, 6 mm temperli cam"),
-    ("Logo / tabela", "grafik tasarım netleşince ayrıca verilecek; yalnızca montaj alanları ayrılmıştır"),
+    ("Logo / tabela", "krem kanal harf (arkadan LED) + Ø720 çift taraflı daire çıkma tabela"),
 ]
 
 SHEETS = []
@@ -308,7 +308,7 @@ STEP_TEXT = [
                                        "köşeden başlayarak vidalanır (pafta 07)."]),
     ("05_alucobond", "5 · Alucobond saçak", ["Saçak bandına 16 kaset (K01–K16) askı profillerine",
                                              "asılır, derz 8 mm, parapet kapağı takılır (pafta 08).",
-                                             "Logo/tabela yalnızca taşıyıcı plaka (grafik sonra)."]),
+                                             "Kanal harf logo ve daire tabela takılır (pafta 11)."]),
     ("06_cam_kapi", "6 · Cam, ekran, kapı", ["Siyah doğrama, 6 mm temperli camlar, sürgülü servis",
                                             "kapağı, 55\" menü ekranı, kapı, pencere saçağı (LED)",
                                             "ve bar rafları monte edilir (pafta 09)."]),
@@ -699,8 +699,9 @@ def s08(sh):
         ["Kapı sövesi yan ×2 + üst", f"{mm(reveal)} × {mm(door_h)} / {mm(door_w)}", ""],
         ["Kapı kanadı kaplaması ×2 yüz", f"{mm(door_w - 0.05)} × {mm(door_h - 0.04)}", "çelik kasa üzerine"],
         ["Pencere saçağı (LED'li)", f"{mm(win_w + 2 * L.CANOPY['overhang'])} × {mm(L.CANOPY['depth'])}", "alt yüzde LED kanalı"],
-        ["Tabela alanı (grafik sonra)", f"{mm(L.SIGN['w'])} × {mm(L.SIGN['h'])}", "yalnızca taşıyıcı"],
-        ["Logo alanı ×2 (grafik sonra)", f"Ø{mm(2 * L.LOGO_R)}", "yalnızca taşıyıcı"],
+        ["Kanal harf ön: MHC h280 + KAHVE h75", "krem yüz, 40 derinlik", "arkadan LED"],
+        ["Kanal harf sol yan: MHC KAHVE h110", "krem yüz, 40 derinlik", "arkadan LED"],
+        ["Daire çıkma tabela, çift taraflı", f"Ø{mm(2 * L.BLADE['r'])} × {mm(L.BLADE['t'])}", "kenarı ışıklı"],
     ]
     sh.text(160, 216, "Diğer Alucobond parçaları", size=2.6, weight="medium")
     sh.table(160, 212, [("Parça", 62, "l"), ("Ölçü", 52, "l"), ("Not", 38, "l")], others, size=2.0, row_h=4.0)
@@ -887,7 +888,7 @@ def s10(sh):
 
 
 # ============================================================================ 11
-@sheet("11", "Çatı, logo/tabela alanları ve toplam metraj", "1:50 · 1:10")
+@sheet("11", "Çatı, logo, daire tabela ve toplam metraj", "1:50 · 1:20 · 1:10")
 def s11(sh):
     v = sh.view(80, 220, 50)
     v.poly(G.ring(L.FASCIA_D[0]), fill="alu", lw="thin")
@@ -909,32 +910,42 @@ def s11(sh):
     v.dim_h(-C.A, C.A, -C.B, -8)
     v.dim_v(-C.B, C.B, -C.A, -8)
     v.caption(-C.A, -C.B - 0.45, "ÇATI PLANI")
-    # logo / sign mounting zones (graphics not final), 1:10
-    g = sh.view(60, 92, 10)
-    g.circle(0, 0, L.LOGO_R, fill="#ffffff", lw="thin", ls=(0, (4, 2)))
-    for ang in (45, 135, 225, 315):
-        a_ = math.radians(ang)
-        g.circle(0.22 * math.cos(a_), 0.22 * math.sin(a_), 0.012, fill="#1a1a1a", lw=0)
-    g.text(0, 0.03, "LOGO ALANI", size=3.0, weight="medium", ha="center", va="center")
-    g.text(0, -0.06, "grafik netleşince verilecek", size=2.0, ha="center", va="center", color=GREY)
-    g.dim_h(-L.LOGO_R, L.LOGO_R, -L.LOGO_R, -6, text=f"Ø{mm(2 * L.LOGO_R)} (en fazla)")
-    g.caption(-L.LOGO_R, -L.LOGO_R - 0.16, "LOGO ALANI ×2 · ön ve sol saçak", size=2.4)
-    sg = L.SIGN
-    t = sh.view(180, 92, 10)
-    t.rect(-sg["w"] / 2, -sg["h"] / 2, sg["w"] / 2, sg["h"] / 2, fill="#ffffff", lw="thin")
-    t.text(0, 0.01, "TABELA ALANI", size=3.0, weight="medium", ha="center", va="center")
-    t.text(0, -0.07, "yazı ve grafik sonra", size=2.0, ha="center", va="center", color=GREY)
-    t.dim_h(-sg["w"] / 2, sg["w"] / 2, -sg["h"] / 2, -6)
-    t.dim_v(-sg["h"] / 2, sg["h"] / 2, sg["w"] / 2, 6)
-    t.caption(-sg["w"] / 2, -sg["h"] / 2 - 0.16, f"TABELA ALANI · ön saçak, merkez +{mm(sg['z'])}", size=2.4)
+    # channel letters (front) and blade sign, 1:10 / 1:20
+    g = sh.view(130, 142 - 2.40 * 50, 20)
+    xf, lines = L.LETTERS["front"]
+    g.rect(-1.0, FZ0, 1.0, FZ1, fill="alu", lw="thin")
+    for text, font, cap, zc, track in lines:
+        g.text(0, zc, text, size=cap / L.CAP * g.k, ha="center", va="center", color="#efe2c4", serif=font == L.SERIF)
+        g.dim_v(zc - cap / 2, zc + cap / 2, 1.0, 6 if text == "MHC" else 14, text=mm(cap))
+    g.chain_v([FZ0, FZ1], -1.0, -6)
+    g.caption(-1.0, FZ0 - 0.12, "ÖN BANT LOGOSU · kanal harf, ortada", size=2.6)
+    B = L.BLADE
+    t = sh.view(60, 0, 10)
+    t.oy = 52 + B["r"] * t.k
+    t.circle(0, 0, B["r"], fill="#1f1d1c", lw="thin")
+    for text, font, cap, dz, track in B["lines"]:
+        t.text(0, dz, text, size=cap / L.CAP * t.k, ha="center", va="center", color="#efe2c4", serif=font == L.SERIF)
+    t.dim_h(-B["r"], B["r"], -B["r"], -5, text=f"Ø{mm(2 * B['r'])}")
+    k = sh.view(130, t.oy, 10)
+    k.rect(-B["t"] / 2, -B["r"], B["t"] / 2, B["r"], fill="#1f1d1c", lw="thin")
+    k.rect(B["t"] / 2 + B["gap"], -B["r"] - 0.1, B["t"] / 2 + B["gap"] + 0.05, B["r"] + 0.1, fill="alu", lw="thin")
+    for dz in B["arms"]:
+        k.rect(B["t"] / 2, dz - 0.015, B["t"] / 2 + B["gap"] + 0.01, dz + 0.015, fill="#202020", lw=0)
+    k.dim_h(-B["t"] / 2, B["t"] / 2, B["r"], 5)
+    k.dim_h(B["t"] / 2, B["t"] / 2 + B["gap"], B["r"], 5)
+    k.chain_v([-B["r"], B["arms"][0], B["arms"][1], B["r"]], -B["t"] / 2, -6, size=1.9)
+    k.text(B["t"] / 2 + B["gap"] + 0.07, 0, "sol duvar\n(saçak)", size=2.0, va="center")
+    t.caption(-B["r"], -B["r"] - 0.12, "DAİRE ÇIKMA TABELA · önden ve yandan", size=2.6)
+    bx, by = L.blade_centre()
     sh.paragraph(250, 180, [
-        "**Logo ve tabela alanları",
-        "• Grafikler kesin değildir; yalnızca yer ve taşıyıcı hazırlanır.",
-        f"• Logo alanı Ø{mm(2 * L.LOGO_R)} (en fazla), merkez +{mm(L.LOGO_Z)}; ön cephede x = {mm(L.LOGOS['front'])},",
-        "   sol cephede ortada.",
-        f"• Tabela alanı {mm(sg['w'])}×{mm(sg['h'])}, merkez +{mm(sg['z'])}, ön cephede x = +{mm(sg['x'])}.",
-        "• Taşıyıcı: kasete 4 nokta M6 perçin somun + 30 mm mesafe parçası.",
-        "• Her alan için saçak arkasından Ø20 LED besleme geçişi bırakılır.",
+        "**Logo ve tabela",
+        "• Ön bant: krem kanal harf \"MHC\" (h280) ve \"KAHVE\" (h75), ortada,",
+        "   harf derinliği 40, kasetten 15 mm önde, arkadan LED.",
+        "• Sol yan bant: \"MHC KAHVE\" tek satır, h110.",
+        f"• Daire tabela: Ø{mm(2 * B['r'])}, kalınlık {mm(B['t'])}, çift taraflı, kenarı ışıklı;",
+        f"   sol duvardan {mm(B['gap'])} mm dışarıda, ön köşeye {mm(by + C.B)} mm, merkez +{mm(B['z'])}.",
+        "• Konsol: 2 adet 30×12 siyah lama, saçak arkasındaki dikmeye cıvatalı.",
+        "• LED besleme için saçak arkasından Ø20 kablo geçişi.",
     ], size=2.1)
 
     # bill of quantities

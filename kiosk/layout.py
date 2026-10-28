@@ -252,11 +252,24 @@ def window():
     return profiles, panes, screen
 
 
-LOGO_R = 0.38
-LOGO_T = 0.05
-LOGO_Z = 2.64
-LOGOS = {"front": -1.45, "left": 0.0}     # face -> position along it (x on front, y on left)
-SIGN = dict(x=0.80, z=2.70, w=1.34, h=0.25, t=0.03, text="KAHVE · TOST · ÇAY")
+# Signage, Barns-style: backlit channel letters straight on the fascia band, plus a
+# double-sided round blade sign sticking out of the upper left side.
+SERIF, SANS = "Fraunces-SemiBold.ttf", "Jost-Medium.ttf"
+CAP = 0.70            # cap height / font size for both faces
+LETTER_DEPTH = 0.04   # channel letter return
+LETTER_GAP = 0.015    # stand-off from the cassette face
+# face -> (position along the face, [(text, font, cap height, z centre, tracking)])
+LETTERS = {
+    "front": (0.0, [("MHC", SERIF, 0.28, 2.77, 1.0), ("KAHVE", SANS, 0.075, 2.515, 1.9)]),
+    "left": (0.30, [("MHC KAHVE", SERIF, 0.11, 2.70, 1.05)]),
+}
+BLADE = dict(y=-0.70, z=2.62, r=0.36, t=0.06, gap=0.12, arms=(-0.16, 0.16),
+             lines=[("MHC", SERIF, 0.13, 0.035, 1.0), ("KAHVE", SANS, 0.035, -0.115, 1.9)])
+
+
+def blade_centre():
+    """World (x, y) of the blade sign disk: off the left face, past the fascia."""
+    return -C.A + FASCIA_D[0] - BLADE["gap"] - BLADE["r"], BLADE["y"]
 BAR_SHELF = dict(depth=0.30, t=0.04)      # two outside shelves under the order / pick-up bays
 CANOPY = dict(depth=0.16, t=0.03, overhang=0.04)
 AC_OUTDOOR = dict(x=1.45, y=0.95, w=0.82, d=0.30, h=0.56, feet=0.03)

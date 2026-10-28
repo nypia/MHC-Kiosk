@@ -29,6 +29,9 @@ def plan(v, dims=True, cut_mark=True):
     v.line([(x0, -C.B), (x1, -C.B)], lw="hair", ls=(0, (4, 2)))
     for name, a, b in L.bar_shelves():
         v.rect(a, -C.B - L.BAR_SHELF["depth"], b, -C.B, fill=None, lw="hair")
+    bx, by = L.blade_centre()
+    v.rect(bx - L.BLADE["r"], by - L.BLADE["t"] / 2, -C.A + L.FASCIA_D[0], by + L.BLADE["t"] / 2, fill="#1f1d1c",
+           lw="thin")
     # door leaf + swing (opens outward)
     y0, y1 = C.DOOR_Y
     hx = C.A - 0.08
@@ -98,16 +101,14 @@ def elevation(v, face, dims=True, detail=True):
             v.rect(u0 + 0.025, z0 + 0.02, u1 - 0.025, z1 - 0.02, fill="alu", lw="thin")
             hu = u1 - 0.14 if face == "right" else u0 + 0.14
             v.line([(hu, 0.85), (hu, 1.30)], lw="thick", color="#c9cdd0")
-    # signage zones only: the logo and sign graphics are not final yet
-    if face in L.LOGOS:
-        u = L.LOGOS[face] if face == "front" else -L.LOGOS[face]
-        v.circle(u, L.LOGO_Z, L.LOGO_R, fill="#ffffff", lw="thin", z=4.2, ls=(0, (4, 2)))
-        v.text(u, L.LOGO_Z, "LOGO\nALANI", size=0.07 * v.k, ha="center", va="center", z=5)
-    if face == "front":
-        sg = L.SIGN
-        v.rect(sg["x"] - sg["w"] / 2, sg["z"] - sg["h"] / 2, sg["x"] + sg["w"] / 2, sg["z"] + sg["h"] / 2,
-               fill="#ffffff", lw="thin", z=4.2)
-        v.text(sg["x"], sg["z"], "TABELA ALANI", size=0.07 * v.k, ha="center", va="center", z=5)
+    # channel letters on the fascia + the round blade sign
+    if face in L.LETTERS:
+        pos, lines = L.LETTERS[face]
+        u = G.project(face, pos, 0) if face in ("front", "back") else G.project(face, 0, pos)
+        for text, font, cap, zc, track in lines:
+            v.text(u, zc, text, size=cap / L.CAP * v.k, ha="center", va="center", color="#efe2c4", z=5,
+                   serif=font == L.SERIF)
+    blade(v, face)
     # rooftop condenser above the parapet
     ao = L.AC_OUTDOOR
     ac_top = C.ROOF_Z + ao["feet"] + ao["h"]
@@ -130,6 +131,24 @@ def elevation(v, face, dims=True, detail=True):
         v.chain_v(sorted(set(round(z, 4) for z in zs)), -half, -7)
         v.dim_v(0, FZ1, -half, -14)
         v.dim_v(FZ1, ac_top, half, 7, text=f"{mm(ac_top - FZ1)} klima")
+
+
+def blade(v, face):
+    """The round blade sign as seen in an elevation (full disk, or edge-on from the side)."""
+    B = L.BLADE
+    bx, by = L.blade_centre()
+    if face in ("front", "back"):
+        u = G.project(face, bx, by)
+        v.circle(u, B["z"], B["r"], fill="#1f1d1c", lw="thin", z=4.3)
+        for text, font, cap, dz, track in B["lines"]:
+            v.text(u, B["z"] + dz, text, size=cap / L.CAP * v.k, ha="center", va="center", color="#efe2c4",
+                   z=5, serif=font == L.SERIF)
+        wall = G.project(face, -C.A + L.FASCIA_D[0], by)
+        for dz in B["arms"]:
+            v.rect(min(u, wall), B["z"] + dz - 0.015, max(u, wall), B["z"] + dz + 0.015, fill="#202020", lw=0, z=4.2)
+    elif face == "left":
+        u = G.project(face, bx, by)
+        v.rect(u - B["t"] / 2, B["z"] - B["r"], u + B["t"] / 2, B["z"] + B["r"], fill="#1f1d1c", lw="thin", z=4.3)
 
 
 def developed(v, d_label=0.0, z0=0.0, z1=C.HEIGHT, faces=True):

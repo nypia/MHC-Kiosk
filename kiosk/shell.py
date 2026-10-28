@@ -186,16 +186,34 @@ def build_fascia(M, roof):
 
 
 # ====================================================================== glazing
-def _logo(M, col, name, loc, rot):
-    root = U.empty(name, col, loc, rot)
-    disk = U.cylinder(f"{name} disk", L.LOGO_R, L.LOGO_T, (0, 0, 0), col, [M["alucobond"]], verts=96,
-                      rot=(math.pi / 2, 0, 0), origin="center")
-    U.parent(disk, root)
+def _letters(col, mat, name, lines, rot):
+    """Channel letters as extruded text, one object per line, parented to an empty."""
+    root = U.empty(name, col, rot=rot)
+    for k, (text, font, cap, zc, track) in enumerate(lines):
+        U.parent(U.text(f"{name} {k}", text, font, cap / L.CAP, col, mat, loc=(0, 0, Z(zc)),
+                        rot=(math.pi / 2, 0, 0), extrude=L.LETTER_DEPTH / 2, spacing=track), root)
+    return root
+
+
+def _blade_sign(M, col):
+    """Double-sided round blade sign with a glowing edge, on two arms off the left wall."""
+    bx, by = L.blade_centre()
+    B = L.BLADE
+    root = U.empty("daire tabela", col, (bx, by, Z(B["z"])))
     up = (math.pi / 2, 0, 0)
-    U.parent(U.text(f"{name} MHC", "MHC", "Fraunces-SemiBold.ttf", 0.27, col, M["cream"],
-                    loc=(0, -0.026, 0.05), rot=up, extrude=0.003), root)
-    U.parent(U.text(f"{name} KAHVE", "KAHVE", "Jost-Medium.ttf", 0.075, col, M["cream"],
-                    loc=(0, -0.026, -0.13), rot=up, extrude=0.003, spacing=1.7), root)
+    U.parent(U.cylinder("daire tabela gövde", B["r"], B["t"], (0, 0, 0), col, [M["alucobond"]], verts=96,
+                        rot=up, origin="center"), root)
+    U.parent(U.cylinder("daire tabela ışıklı kenar", B["r"] + 0.002, B["t"] - 0.01, (0, 0, 0), col, [M["cream"]],
+                        verts=96, rot=up, origin="center", caps=False), root)
+    for side, rz in ((-1, 0.0), (1, math.pi)):
+        for k, (text, font, cap, zc, track) in enumerate(B["lines"]):
+            U.parent(U.text(f"daire tabela {k} {side}", text, font, cap / L.CAP, col, M["cream"],
+                            loc=(0, side * (B["t"] / 2 + 0.001), zc), rot=(math.pi / 2, 0, rz), extrude=0.002,
+                            spacing=track), root)
+    arm_len = B["gap"] + 0.02
+    for k, dz in enumerate(B["arms"]):
+        U.parent(U.box(f"daire tabela konsol {k}", (arm_len, 0.012, 0.03), (B["r"] + arm_len / 2 - 0.01, 0, dz),
+                       col, [M["black-plastic"]]), root)
     return root
 
 
@@ -303,22 +321,21 @@ def build_glazing(M):
         U.arrive(obj, st, en, offset=(0.8, 0, 0.2), interp="BACK", visible=False)
         U.show_tree(obj, st)
 
-    # Signage: logo disks + "KAHVE · TOST · ÇAY" board, installed as the fascia closes.
+    # Signage: channel letters on the fascia + round blade sign, installed as the fascia closes.
     fs0, fs1 = C.phase("fascia")
-    zc = Z(L.LOGO_Z)
-    logos = [_logo(M, col, "logo ön", (L.LOGOS["front"], fy - 0.018 - 0.055, zc), (0, 0, 0)),
-             _logo(M, col, "logo yan", (-C.A - 0.018 - 0.055, L.LOGOS["left"], zc), (0, 0, -math.pi / 2))]
-    sg = L.SIGN
-    board = U.empty("tabela", col, (sg["x"], fy - 0.018 - 0.03, Z(sg["z"])))
-    U.parent(U.box("tabela pano", (sg["w"], sg["t"], sg["h"]), (0, 0, 0), col, alu, bevel=0.004), board)
-    for k, (bx, bz, bw, bh) in enumerate(((0, 0.107, 1.27, 0.006), (0, -0.107, 1.27, 0.006),
-                                          (-0.632, 0, 0.006, 0.22), (0.632, 0, 0.006, 0.22))):
-        U.parent(U.box(f"tabela çerçeve {k}", (bw, 0.004, bh), (bx, -0.016, bz), col, [M["cream"]]), board)
-    U.parent(U.text("tabela yazı", sg["text"], "Fraunces-SemiBold.ttf", 0.115, col, M["cream"],
-                    loc=(0, -0.016, 0.0), rot=(math.pi / 2, 0, 0), extrude=0.002, spacing=1.08), board)
-    for root, st in ((logos[0], fs1 - 14), (board, fs1 - 8), (logos[1], fs1 - 4)):
-        n = Vector((0, -1, 0)) if root is not logos[1] else Vector((-1, 0, 0))
-        U.arrive(root, st, st + 16, offset=n * 0.6 + Vector((0, 0, 0.3)), interp="BACK", visible=False)
+    proud = L.FASCIA_D[0] - L.LETTER_GAP - L.LETTER_DEPTH / 2
+    x_front, front_lines = L.LETTERS["front"]
+    y_left, left_lines = L.LETTERS["left"]
+    front = _letters(col, M["cream"], "logo harf ön", front_lines, (0, 0, 0))
+    front.location = (x_front, -C.B + proud, 0)
+    left = _letters(col, M["cream"], "logo harf sol", left_lines, (0, 0, -math.pi / 2))
+    left.location = (-C.A + proud, y_left, 0)
+    blade = _blade_sign(M, col)
+    for root, st, n, spin in ((front, fs1 - 14, Vector((0, -1, 0)), None),
+                              (left, fs1 - 8, Vector((-1, 0, 0)), None),
+                              (blade, fs1 - 4, Vector((-1, 0, 0)), (0, 0, math.pi))):
+        U.arrive(root, st, st + 16, offset=n * 0.6 + Vector((0, 0, 0.3)), rot_offset=spin, interp="BACK",
+                 visible=False)
         U.show_tree(root, st)
     for fr, v in ((0, 0.0), (on + 10, 0.0), (on + 16, 0.6)):
         Mt.key_emission(M["cream"], fr, v)

@@ -33,7 +33,7 @@ def _list(sh, x, y, title, lines, size=BIG, gap=1.6):
 # ============================================================================ 1
 @sheet("1/3", "GENEL ÖLÇÜLER", "1:30 · 1:40")
 def g1(sh):
-    f = sh.view(112, 160, 30)
+    f = sh.view(128, 160, 30)
     f.ts = 1.35
     V.elevation(f, "front")
     f.caption(-C.A, -0.62, "ÖNDEN GÖRÜNÜŞ (cam tarafı)", size=3.6)
@@ -200,13 +200,21 @@ def g3(sh):
         "• Cam ve kapı kenarları da alükobond ile kaplanır.",
     ], size=2.9)
     _, panes, _ = L.window()
-    _list(sh, 150, y - 4, "CAM (6 mm temperli, siyah doğrama)", [
+    y = _list(sh, 150, y - 4, "CAM (6 mm temperli, siyah doğrama)", [
         f"• Toplam boşluk {mm(C.WIN_X[1] - C.WIN_X[0])} × {mm(C.WIN_HEAD - C.WIN_SILL)}, ön cephenin tam ortası.",
         "• " + ", ".join(f"{n.split(' (')[0]} {mm(w + 0.02)}×{mm(h + 0.02)}" for n, _, _, w, h, _ in panes) + ".",
         "• Sağ alttaki cam (servis kapağı) yukarı kayar.",
         "• Ortadaki camın arkasına 55\" menü ekranı asılır.",
     ], size=2.9)
-    _list(sh, 150, 64, "TAVAN VE KLİMA", [
+    bx, by = L.blade_centre()
+    B = L.BLADE
+    y = _list(sh, 150, y - 4, "LOGO VE DAİRE TABELA (krem, arkadan LED)", [
+        "• Ön siyah bantın ortasına kanal harf: \"MHC\" 280 mm, altında \"KAHVE\" 75 mm.",
+        "• Sol yan bantta tek satır \"MHC KAHVE\" 110 mm.",
+        f"• Sol yanda dışarı çıkan daire tabela: Ø{mm(2 * B['r'])}, {mm(B['t'])} kalın, iki yüzü yazılı.",
+        f"   Duvardan {mm(B['gap'])} mm dışarıda, ön köşeye {mm(by + C.B)} mm, ortası +{mm(B['z'])}.",
+    ], size=2.9)
+    _list(sh, 150, y - 4, "TAVAN VE KLİMA", [
         f"• İç tavan +{mm(C.CEILING_Z)}. Üstündeki boşluğa gizli kanallı klima girer.",
         "• Tavanda 60×60 bakım kapağı bırakılır. Dış ünite çatıda.",
     ], size=2.9)
