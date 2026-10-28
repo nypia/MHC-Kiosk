@@ -38,6 +38,20 @@ blender -b kiosk.blend -P render.py -- --final --stills   # 3840×2160 C01–C04
 
 `kiosk.blend` Blender'da doğrudan açılabilir. Ancak doku yolları `assets/` klasörüne göreli olduğundan önce `fetch_assets.py` çalıştırılmalıdır.
 
+## Gemini ile fotogerçekçi görseller
+
+`gemini_render.py`, `kiosk/art/` altındaki Blender render'larını ve rozet logoyu Gemini görüntü modeline referans olarak gönderir. Kioskun geometrisi korunur, yalnızca görünüm fotoğraf gerçekliğine taşınır. Yalnızca Python'un standart kütüphanesini kullanır. Anahtar `GEMINI_API_KEY` (veya `GOOGLE_API_KEY`) ortam değişkeninden okunur ve hiçbir dosyaya yazılmaz.
+
+```bash
+python gemini_render.py --list                # anahtarın kullanabildiği görüntü modelleri
+python gemini_render.py                       # gunduz, aksam, kus_bakisi → docs/render/gemini/
+python gemini_render.py --shots aksam --n 3   # tek çekim, 3 varyasyon
+python gemini_render.py --model gemini-2.5-flash-image
+python gemini_render.py --print-prompts       # API çağırmadan promptlar ve referans dosyaları
+```
+
+Model verilmezse en yeni görüntü modeli seçilir, Pro sürümü önceliklidir. Logo yazısı bozuk çıkarsa aynı çekimi `--n` ile birkaç kez üretip en iyisini seçin.
+
 ## Üretim paftaları (usta için)
 
 `docs/uretim/MHC_Kiosk_Uretim_Paftalari.pdf`: A3, 12 pafta. PNG önizlemeler `docs/uretim/png/` klasöründe.
